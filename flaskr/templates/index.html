@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="login-container">
+    <div class="login-box">
+        <!-- Logo Image -->
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Company Logo">
+        </div>
+
+        <h2>Login to Indus Warehouse Inventory</h2>
+
+        <!-- Display error message if login fails -->
+        {% if error %}
+        <div class="error-message">{{ error }}</div>
+        {% endif %}
+
+        <!-- Login Form -->
+        <form id="auth-form" action="{{ url_for('login') }}" method="POST">
+            <div class="input-group">
+                <label for="username">
+                    <input type="text" id="username" name="username" placeholder="Username" autocomplete="off" required>
+                </label>
+            </div>
+            <div class="input-group">
+                <label for="password">
+                    <input type="password" id="password" name="password" placeholder="Password" autocomplete="off" required>
+                </label>
+            </div>
+            <div class="button-group">
+                <input type="submit" value="Login">
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+    <title>Indus Warehouse Inventory</title>
+</head>
+<body>
+    <header>
+        <h1>Indus Warehouse Inventory</h1>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        {% endif %}
+    </header>
+
+    <main>
+        {% block body %}
+        {% endblock %}
+    </main>
+</body>
+</html>

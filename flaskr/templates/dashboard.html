@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<div class="container">
+    <!-- Tabs, Active Tab Name, and Search Bar Section -->
+    <div class="tabs-search-container">
+        <!-- Active Tab Title -->
+        <h3 class="active-tab-name">{{ active_tab }} Data</h3>
+
+        <!-- Tab Buttons -->
+        <div class="tab-buttons">
+            <button class="tab-btn {% if active_tab == 'Inventory' %}active{% endif %}" onclick="window.location.href='{{ url_for('views.home') }}'">Inventory</button>
+            <button class="tab-btn {% if active_tab == 'Transit' %}active{% endif %}" onclick="window.location.href='{{ url_for('views.transit') }}'">Transit</button>
+        </div>
+
+        <!-- Dynamic Search Bar -->
+        <label for="search-input">
+            <input type="text" id="search-input"
+                   placeholder="Search by {{ 'Cust. Part' if active_tab == 'Inventory' else 'Cust. Part No.' if active_tab == 'Transit' else 'Customer Material' }}"
+                   onkeyup="filterTable()" class="search-bar">
+        </label>
+    </div>
+
+    <!-- Table Section for Inventory -->
+    {% if active_tab == 'Inventory' %}
+    <div class="data-table">
+        {% if tabs_data['Inventory'] %}
+        <div class="table-wrapper">
+            <div class="table-scroll-container">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            {% for header in tabs_data['Inventory'].headers %}
+                            <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in tabs_data['Inventory'].rows %}
+                        <tr>
+                            {% for col in row %}
+                            <td>
+                                {{ col }}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+        {% else %}
+        <p>No data available for Inventory tab.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Table Section for Transit -->
+    {% if active_tab == 'Transit' %}
+    <div class="data-table">
+        {% if tabs_data['Transit'] %}
+        <div class="table-wrapper">
+            <div class="table-scroll-container">
+                <table class="transit-table">
+                    <thead>
+                        <tr>
+                            {% for header in tabs_data['Transit'].headers %}
+                            <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in tabs_data['Transit'].rows %}
+                        <tr>
+                            {% for col in row %}
+                            <td>{{ col }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+        {% else %}
+        <p>No data available for Transit tab.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Link to the JavaScript file -->
+<script src="{{ url_for('static', filename='filter.js') }}"></script>
+
+{% endblock %}
