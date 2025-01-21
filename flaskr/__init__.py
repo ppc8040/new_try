@@ -16,7 +16,7 @@ def create_app():
     login_manager.login_view = 'render_login'
 
     # Setup config for database
-    uri = "postgres://u5uvdmh4eki2lk:pd24f3a532c9386e873acf172a2f5a60a5a3176daa7b2f850c8c674e14bd83c6d@c9mq4861d16jlm.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d1bglbigug1dqt" 
+    uri = os.environ.get("HEROKU_POSTGRESQL_GREEN_URL") 
     if uri and uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = uri
