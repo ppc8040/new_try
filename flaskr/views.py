@@ -30,10 +30,12 @@ def get_inventory_data():
                 pcs_per_pallet AS "Pcs per Pallet"
             FROM inventory_db 
             WHERE cust_code = :cust_code
+            ORDER BY warehouse_stock DESC
         """)
         # Execute the query and fetch the result into a Pandas DataFrame
         result = db.session.execute(query, {'cust_code': current_user.username})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
+        
 
         if not df.empty:
             table_headers = df.columns.tolist()
