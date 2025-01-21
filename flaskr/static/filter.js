@@ -10,7 +10,7 @@ function filterTable() {
         columnIndex = getColumnIndex(table, 'Customer Part');
     } else if (activeTab.includes('Transit')) {
         table = document.querySelector('.transit-table');
-        columnIndex = getColumnIndex(table, 'Customer Part No.');
+        columnIndex = getColumnIndex(table, 'Customer Part');
     } else if (activeTab.includes('OOR')) {
         table = document.querySelector('.oor-table');
         columnIndex = getColumnIndex(table, 'Customer Material');
