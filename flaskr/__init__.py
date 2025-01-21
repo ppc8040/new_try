@@ -2,7 +2,9 @@ import os
 from flask import Flask, request, session, redirect, render_template, url_for
 from flask_login import LoginManager, login_user, logout_user
 from flaskr.models import db, User, Inventory
-
+from flaskr.final_db import run_data_update
+import time
+import threading
 from flaskr.home import home_bp
 from flaskr.views import views
 
@@ -61,5 +63,23 @@ def create_app():
         db.create_all()
         app.register_blueprint(home_bp)
         app.register_blueprint(views, url_prefix='/views')
+
+     # Schedule the `run_data_update` function
+    def schedule_updates():
+        import schedule
+
+        # Schedule the function to run every 6 hours
+        schedule.every(6).minutes.do(run_data_update)
+
+        # Run the schedule in a separate thread
+        def run_scheduler():
+            while True:
+                schedule.run_pending()
+                time.sleep(1)
+
+        threading.Thread(target=run_scheduler, daemon=True).start()
+
+    # Start the scheduler
+    schedule_updates()
 
     return app
