@@ -27,7 +27,7 @@ def get_inventory_data():
                 days_gt_240 AS ">240 Days", 
                 warehouse_transit AS "Warehouse+Transit", 
                 pallet_size_cms AS "Pallet Size (cms)", 
-                pcs_per_pallet AS "Pcs per Pallet"
+                pcs_per_pallet AS "Coils/Pallet"
             FROM inventory_db 
             WHERE cust_code = :cust_code
             ORDER BY warehouse_stock DESC
@@ -56,7 +56,7 @@ def get_transit_data():
         query = text(""" 
             SELECT 
                 indus_part AS "Indus Part", 
-                customer_part_no AS "Customer Part No.", 
+                customer_part_no AS "Customer Part", 
                 customer_code AS "Customer Code", 
                 pallet_qty AS "Coils/Pallet", 
                 num_of_pallet AS "Number of Pallets", 
