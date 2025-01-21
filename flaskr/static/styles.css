@@ -376,3 +376,50 @@ header {
     padding: 8px; /* Adjust padding for better spacing */
   }
 }
+
+/* Styling for the Transit table */
+.transit-table {
+  width: 100%; /* Ensure the table spans the full width */
+  border-collapse: collapse; /* Collapse table borders */
+  background-color: #ffffff; /* Set background color to white */
+  margin-top: 0px; /* Add space on top of the table */
+  margin-bottom: 100px;
+}
+
+/* Styling for Transit table headers */
+.transit-table th {
+  padding: 12px 15px; /* Add padding for better spacing */
+  text-align: Center; /* Left-align the header text */
+  background-color: #007bff; /* Blue background for headers */
+  color: white; /* White text color for contrast */
+  border: 1px solid #ddd; /* Light border around header cells */
+  font-weight: bold; /* Make header text bold */
+}
+
+/* Styling for Transit table rows */
+.transit-table td {
+  padding: 10px 12px; /* Add padding inside the table cells */
+  text-align: right; /* Left-align the cell text */
+  border: 1px solid #ddd; /* Light border around table cells */
+  color: #333; /* Dark gray text color for better readability */
+}
+
+/* Hover effect on rows */
+.transit-table tr:hover {
+  background-color: #f5f5f5; /* Light gray background on hover */
+}
+
+/* Alternate row colors */
+.transit-table tr:nth-child(even) {
+  background-color: #f9f9f9; /* Light gray background for even rows */
+}
+
+/* Optional: Add responsive styles for small screens */
+@media (max-width: 768px) {
+  .transit-table th,
+  .transit-table td {
+    font-size: 14px; /* Reduce font size for smaller screens */
+    padding: 8px; /* Adjust padding for better spacing */
+  }
+}
+
