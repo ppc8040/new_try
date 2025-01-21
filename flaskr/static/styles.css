@@ -1,4 +1,4 @@
-/* General body styling */
+  /* General body styling */
 body {
   font-family: Arial, sans-serif;
   background-color: #f5f5f5;
@@ -290,7 +290,7 @@ header {
 
 /* Left-align non-numeric columns */
 .left-align {
-  text-align: left;
+  text-align: right;
 }
 
 /* Container for horizontal and vertical scrolling */
@@ -343,7 +343,7 @@ header {
 /* Styling for Inventory table headers */
 .inventory-table th {
   padding: 12px 15px; /* Add padding for better spacing */
-  text-align: left; /* Left-align the header text */
+  text-align: Center; /* Left-align the header text */
   background-color: #007bff; /* Blue background for headers */
   color: white; /* White text color for contrast */
   border: 1px solid #ddd; /* Light border around header cells */
