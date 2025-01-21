@@ -56,9 +56,9 @@ def get_transit_data():
                 indus_part AS "Indus Part", 
                 customer_part_no AS "Customer Part No.", 
                 customer_code AS "Customer Code", 
-                pallet_qty AS "Pallet Quantity", 
+                pallet_qty AS "Coils/Pallet", 
                 num_of_pallet AS "Number of Pallets", 
-                total_qty AS "Total Quantity", 
+                total_qty AS "Total Coils", 
                 container_number AS "Container Number", 
                 eta_arrival_to_va AS "ETA Arrival to VA"
             FROM transit_db 
