@@ -39,8 +39,8 @@ def get_inventory_data():
             table_headers = df.columns.tolist()
             table_rows = df.values.tolist()
         else:
-            table_headers = ["Error"]
-            table_rows = [["Currently no stock in the Warehouse"]]
+            table_headers = ["Currently no stock in the Warehouse"]
+            table_rows = [[""]]
 
         return {'headers': table_headers, 'rows': table_rows}
 
@@ -71,7 +71,7 @@ def get_transit_data():
 
         # If the dataframe is empty, return an error
         if df.empty:
-            return {'headers': ["Error"], 'rows': [["Currently no stock in transit to Warehouse"]]}
+            return {'headers': ["Currently no stock in transit to Warehouse"], 'rows': [[""]]}
 
         # Reorder columns if required (same logic as in your existing code)
         column_to_move = 'Customer Code'
