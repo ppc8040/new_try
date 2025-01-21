@@ -17,7 +17,7 @@
         <!-- Dynamic Search Bar -->
         <label for="search-input">
             <input type="text" id="search-input"
-                   placeholder="Search by {{ 'Cust. Part' if active_tab == 'Inventory' else 'Cust. Part No.' if active_tab == 'Transit' else 'Customer Material' }}"
+                   placeholder="Search by {{ 'Customer Part' if active_tab == 'Inventory' else 'Customer Part' if active_tab == 'Transit' else 'Customer Material' }}"
                    onkeyup="filterTable()" class="search-bar">
         </label>
     </div>
