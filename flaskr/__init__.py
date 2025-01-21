@@ -69,7 +69,7 @@ def create_app():
         import schedule
 
         # Schedule the function to run every 6 hours
-        schedule.every(6).minutes.do(run_data_update)
+        schedule.every(6).hours.do(run_data_update)
 
         # Run the schedule in a separate thread
         def run_scheduler():
