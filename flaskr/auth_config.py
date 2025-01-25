@@ -2,5 +2,5 @@ import os
 
 
 class AuthConfig:
-    CLIENT_ID = os.environ.get('CLIENT_ID')  # 'a2239be7-12cd-442d-983f-ea7e316ef767'
-    CLIENT_SECRET = os.environ.get('CLIENT_SECRET')  # 'sho8Q~sanlYEX3SKXjYJb0NSXL.gPRpdi63-tcmp'
+    CLIENT_ID = os.environ.get('CLIENT_ID')  
+    CLIENT_SECRET = os.environ.get('CLIENT_SECRET') 
