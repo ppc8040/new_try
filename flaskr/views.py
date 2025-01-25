@@ -97,17 +97,74 @@ def get_transit_data():
     except Exception as e:
         return {'headers': ["Error"], 'rows': [[str(e)]]}
 
+def get_oor_data():
+    try:
+        # Extract the customer code from the current user's username (cust_code_filter)
+        cust_code_filter = current_user.username[3:6]
+        
+        # Define the SQL query to fetch the OOR data
+        query = text("""
+            SELECT 
+                actual_customer AS "Customer Code", 
+                customer_po_number AS "Customer PO#", 
+                date_of_receiving_po AS "Date of Receiving PO#", 
+                customer_required_delivery_date AS "Required Delivery Date",  
+                customer_material AS "Customer Part", 
+                indus_product AS "Indus Part", 
+                ordered_quantity AS "Ordered Quantity", 
+                delivered_quantity AS "Delivered Quantity", 
+                open_quantity AS "Open Quantity", 
+                stock_in_virginia AS "Stock in Virginia", 
+                stock_in_transit AS "Stock in Transit", 
+                stock_at_indus AS "Stock at Indus- Dubai", 
+                to_be_manufactured AS "Manufacturing WIP"
+            FROM customer_orders 
+            WHERE actual_customer LIKE :cust_code_filter
+            ORDER BY date_of_receiving_po ASC         
+        """)
+
+        # Execute the query and fetch the result into a Pandas DataFrame
+        result = db.session.execute(query, {'cust_code_filter': f'%{cust_code_filter}%'})
+        df = pd.DataFrame(result.fetchall(), columns=result.keys())
+
+        # If the dataframe is empty, return an error message
+        if df.empty:
+            return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
+
+        # Convert date columns to datetime format and format to 'dd-MMM-yy'
+        date_columns = ['Date of Receiving PO#', 'Customer Required Delivery Date', 'Indus Ship Date', 'Actual Ship Date', 'ETA Virginia']
+        for col in date_columns:
+            if col in df.columns:
+                # Convert to datetime, where missing values will be handled correctly
+                df[col] = pd.to_datetime(df[col], errors='coerce')
+
+                # Format the date column to 'dd-MMM-yy' and replace NaT with blanks
+                df[col] = df[col].dt.strftime('%d-%b-%y').fillna('')
+
+        # Prepare table headers and rows for the response
+        table_headers = df.columns.tolist()
+        table_rows = df.values.tolist()
+
+        return {'headers': table_headers, 'rows': table_rows}
+
+    except Exception as e:
+        return {'headers': ["Error"], 'rows': [[str(e)]]}
+
+
 # Route for the Dashboard (default view shows Inventory)
 @views.route('/')
 @login_required
 def home():
     inventory_data = get_inventory_data()  # Get Inventory data
     transit_data = get_transit_data()  # Get Transit data
+    oor_data = get_oor_data()
     tabs_data = {
         'Inventory': inventory_data,
-        'Transit': transit_data
+        'Transit': transit_data,
+        'OOR': oor_data
     }  # Display all tabs
-    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Inventory')
+    hide_oor_button = current_user.username in ['001CPT-AT', '001WFI', '001SCT', '001RDT']
+    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Inventory',hide_oor_button = hide_oor_button)
 
 # Route for the Transit tab
 @views.route('/transit')
@@ -115,4 +172,14 @@ def home():
 def transit():
     transit_data = get_transit_data()  # Get Transit data
     tabs_data = {'Transit': transit_data}  # Show Transit data
-    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Transit')
+    hide_oor_button = current_user.username in ['001CPT-AT', '001WFI', '001SCT', '001RDT']
+    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Transit',hide_oor_button=hide_oor_button)
+
+# Route for the OOR tab
+@views.route('/open-order')
+@login_required
+def oor():
+    oor_data = get_oor_data()  # Get OOR data
+    tabs_data = {'Open Order': oor_data}  # Show OOR data
+    hide_oor_button = current_user.username in ['CPT', '001WFI', '001SCT', '001RDT']
+    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Open Order',hide_oor_button =hide_oor_button)
