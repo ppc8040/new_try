@@ -3,28 +3,40 @@ function filterTable() {
     const filter = input.value.toUpperCase();
     const activeTab = document.querySelector('.active-tab-name').textContent.trim();
 
-    let table, rows, columnIndex;
+    let table, rows, columnIndices = [];
 
     if (activeTab.includes('Inventory')) {
         table = document.querySelector('.inventory-table');
-        columnIndex = getColumnIndex(table, 'Customer Part');
+        columnIndices = [getColumnIndex(table, 'Customer Part')];
     } else if (activeTab.includes('Transit')) {
         table = document.querySelector('.transit-table');
-        columnIndex = getColumnIndex(table, 'Customer Part');
-    } else if (activeTab.includes('OOR')) {
+        columnIndices = [getColumnIndex(table, 'Customer Part')];
+    } else if (activeTab.includes('Open Order')) {
         table = document.querySelector('.oor-table');
-        columnIndex = getColumnIndex(table, 'Customer Material');
+        columnIndices = [
+            getColumnIndex(table, 'Customer Part'),
+            getColumnIndex(table, 'Customer PO#') // Include both columns
+        ];
     }
 
-    if (table && columnIndex !== -1) {
+    if (table && columnIndices.length > 0) {
         rows = table.getElementsByTagName('tr');
 
         for (let i = 1; i < rows.length; i++) {
-            const cell = rows[i].getElementsByTagName('td')[columnIndex];
-            if (cell) {
-                const cellValue = cell.textContent || cell.innerText;
-                rows[i].style.display = cellValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+            let isVisible = false;
+            for (let columnIndex of columnIndices) {
+                if (columnIndex !== -1) {
+                    const cell = rows[i].getElementsByTagName('td')[columnIndex];
+                    if (cell) {
+                        const cellValue = cell.textContent || cell.innerText;
+                        if (cellValue.toUpperCase().indexOf(filter) > -1) {
+                            isVisible = true;
+                            break;
+                        }
+                    }
+                }
             }
+            rows[i].style.display = isVisible ? '' : 'none';
         }
     }
 }
