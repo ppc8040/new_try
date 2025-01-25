@@ -56,3 +56,30 @@ class Transit(db.Model):
 
     def __repr__(self):
         return f'<Transit {self.id}>'    
+
+class OOR_db(db.Model):
+    __tablename__ = 'customer_orders'  # Table name in PostgreSQL
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)  # Primary Key
+    customer_code = db.Column(db.String(50), nullable=False)
+    customer_po = db.Column(db.String(100), nullable=True)
+    date_of_receiving_po = db.Column(db.Date, nullable=True)
+    customer_required_delivery_date = db.Column(db.Date, nullable=True)
+    sales_document = db.Column(db.String(100), nullable=True)
+    sales_document_item = db.Column(db.String(50), nullable=True)
+    customer_material = db.Column(db.String(100), nullable=True)
+    indus_product = db.Column(db.String(100), nullable=True)
+    ordered_quantity = db.Column(db.Integer, nullable=True, default=0)
+    delivered_quantity = db.Column(db.Integer, nullable=True, default=0)
+    open_quantity = db.Column(db.Integer, nullable=True, default=0)
+    stock_in_virginia = db.Column(db.Integer, nullable=True, default=0)
+    stock_in_transit = db.Column(db.Integer, nullable=True, default=0)
+    stock_at_indus = db.Column(db.Integer, nullable=True, default=0)
+    to_be_manufactured = db.Column(db.Integer, nullable=True, default=0)
+    indus_ship_date = db.Column(db.Date, nullable=True)
+    actual_ship_date = db.Column(db.Date, nullable=True)  # First shipment date for partial qty
+    eta_virginia = db.Column(db.Date, nullable=True)
+    actual_customer = db.Column(db.String(100), nullable=True)
+
+    def __repr__(self):
+        return f"<OOR_db {self.customer_code}>"
