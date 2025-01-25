@@ -52,3 +52,84 @@ def process_data_transit(df):
     df = df.replace('<NA>', '')
 
     return df
+
+
+def process_oor_data(df):
+    # Fill missing values with empty strings
+    df = df.fillna('')
+    
+    # Drop unnecessary columns (e.g., 'Stock at 2000')
+    columns_to_drop = ['Stock at 2000']
+    df = df.drop(columns=columns_to_drop, errors='ignore')
+
+    # List of numeric columns to convert
+    numeric_columns = [
+        'Ordered Quantity',
+        'Delivered Quantity', 'Open Quantity', 'Stock in Virginia',
+        'Stock in Transit', 'Stock at Indus', 'To be manufactured'
+    ]
+
+    # List of date columns to format
+    date_columns = [
+        'Date of receiving PO#', 'Customer Required Delivery Date', 'Indus Ship Date',
+        'Actual Ship Date(First shipment date for partitial qty shipped)', 'ETA Virginia'
+    ]
+
+    # Convert date columns to datetime format and format to 'dd-MMM-yy'
+    for col in date_columns:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce')
+            df[col] = df[col].fillna('')
+            df[col] = df[col].dt.strftime('%d-%b-%y')  # Format the date as 'dd-MMM-yy'
+
+    # Convert numeric columns to integers (handling NaNs)
+    for col in numeric_columns:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype('int64')   
+
+    # Filter rows where 'Open Quantity' is greater than 0
+    if 'Open Quantity' in df.columns:
+        df = df[df['Open Quantity'] > 0]
+
+    # Replace '<NA>' values with empty strings
+    df = df.replace('<NA>', '')
+
+    # Define the column mappings (Excel -> PostgreSQL)
+    column_mappings = {
+        'Customer Code': 'customer_code',
+        'Customer PO#': 'customer_po_number',
+        'Date of receiving PO#': 'date_of_receiving_po',
+        'Customer Required Delivery Date': 'customer_required_delivery_date',
+        'Sales Document': 'sales_document',
+        'Sales Document Item': 'sales_document_item',
+        'Customer Material': 'customer_material',
+        'Indus Product': 'indus_product',
+        'Ordered Quantity': 'ordered_quantity',
+        'Delivered Quantity': 'delivered_quantity',
+        'Open Quantity': 'open_quantity',
+        3001: 'stock_in_virginia',        # Adjusted mapping
+        3003: 'stock_in_transit',         # Adjusted mapping
+        1000: 'stock_at_indus',           # Adjusted mapping
+        'Indus Ship Date': 'indus_ship_date',
+        'Actual Customer': 'actual_customer',
+        'To be Manufactured': 'to_be_manufactured',  # Adjusted mapping
+    }
+
+    # Rename columns to match PostgreSQL table
+    df.rename(columns=column_mappings, inplace=True)
+
+    # Retain only the columns relevant for insertion
+    columns_to_keep = [
+        'customer_code', 'customer_po_number', 'date_of_receiving_po',
+        'customer_required_delivery_date', 'sales_document', 'sales_document_item',
+        'customer_material', 'indus_product', 'ordered_quantity', 'delivered_quantity',
+        'open_quantity', 'stock_in_virginia', 'stock_in_transit', 'stock_at_indus',
+        'to_be_manufactured', 'indus_ship_date', 'actual_customer'
+    ]
+    df = df[columns_to_keep]
+
+    # Assign None (NULL) to 'actual_ship_date' and 'eta_virginia' columns since they don't exist in the Excel file
+    df['actual_ship_date'] = None
+    df['eta_virginia'] = None
+
+    return df
