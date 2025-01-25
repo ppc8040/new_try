@@ -14,7 +14,7 @@ def get_inventory_data():
         query = text("""
             SELECT 
                 cust_code AS "Customer Code", 
-                indus_part AS "Industry Part", 
+                indus_part AS "Indus Part", 
                 customer_part AS "Customer Part", 
                 in_transit_stock AS "In Transit Stock", 
                 warehouse_stock AS "Warehouse Stock", 
