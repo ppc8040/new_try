@@ -15,11 +15,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
-    <title>Indus Warehouse Inventory</title>
+    <title>Indus Customer Portal</title>
 </head>
 <body>
     <header>
-        <h1>Indus Warehouse Inventory</h1>
+        <h1>Indus Customer Portal</h1>
         {% if current_user.is_authenticated %}
         <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         {% endif %}
