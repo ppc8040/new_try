@@ -12,12 +12,16 @@
         <div class="tab-buttons">
             <button class="tab-btn {% if active_tab == 'Inventory' %}active{% endif %}" onclick="window.location.href='{{ url_for('views.home') }}'">Inventory</button>
             <button class="tab-btn {% if active_tab == 'Transit' %}active{% endif %}" onclick="window.location.href='{{ url_for('views.transit') }}'">Transit</button>
+            {% if not hide_oor_button %}
+            <button class="tab-btn {% if active_tab == 'Open Order' %}active{% endif %}" onclick="window.location.href='{{ url_for('views.oor') }}'">Open Order</button> <!-- OOR button -->
+            {% endif %}
         </div>
+
 
         <!-- Dynamic Search Bar -->
         <label for="search-input">
             <input type="text" id="search-input"
-                   placeholder="Search by {{ 'Customer Part' if active_tab == 'Inventory' else 'Customer Part' if active_tab == 'Transit' else 'Customer Material' }}"
+                   placeholder="Search by {{ 'Customer Part' if active_tab == 'Inventory' else 'Customer Part' if active_tab == 'Transit' else 'Customer Part/PO#' if active_tab == 'Open Order' else 'Customer Part' }} "
                    onkeyup="filterTable()" class="search-bar">
         </label>
     </div>
@@ -84,6 +88,38 @@
         </div>
         {% else %}
         <p>No data available for Transit tab.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Table Section for OOR -->
+    {% if active_tab == 'Open Order' %}
+    <div class="data-table">
+        {% if tabs_data['Open Order'] %}
+        <div class="table-wrapper">
+            <div class="table-scroll-container">
+                <table class="oor-table">
+                    <thead>
+                        <tr>
+                            {% for header in tabs_data['Open Order'].headers %}
+                            <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in tabs_data['Open Order'].rows %}
+                        <tr>
+                            {% for col in row %}
+                            <td>{{ col }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+        {% else %}
+        <p>No data available for Open Order tab.</p>
         {% endif %}
     </div>
     {% endif %}
