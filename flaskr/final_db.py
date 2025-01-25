@@ -71,6 +71,58 @@ def insert_transit_data(df):
     except Exception as e:
         print(f"Error inserting transit data: {e}")
 
+def handle_missing_dates(date_value):
+    """Replace placeholder date or NaN with None for missing dates."""
+    if date_value == '1900-01-01' or pd.isna(date_value):
+        return None
+    return date_value
+
+def insert_oor_data(df):
+    try:
+        conn = psycopg2.connect(uri)
+        cursor = conn.cursor()
+
+        cursor.execute("DELETE FROM customer_orders")
+        
+        # Prepare the INSERT statement
+        insert_query = """
+            INSERT INTO customer_orders (
+                customer_code, customer_po_number, date_of_receiving_po,
+                customer_required_delivery_date, sales_document, sales_document_item,
+                customer_material, indus_product, ordered_quantity, delivered_quantity,
+                open_quantity, stock_in_virginia, stock_in_transit, stock_at_indus,
+                to_be_manufactured, indus_ship_date, actual_customer, actual_ship_date, eta_virginia,last_updated
+            ) VALUES %s
+        """
+
+        # Convert DataFrame to list of tuples and handle missing dates
+        data_tuples = []
+        for _, row in df.iterrows():
+            data_tuples.append((
+                row['customer_code'], row['customer_po_number'], handle_missing_dates(row['date_of_receiving_po']),
+                handle_missing_dates(row['customer_required_delivery_date']), row['sales_document'], row['sales_document_item'],
+                row['customer_material'], row['indus_product'], row['ordered_quantity'], row['delivered_quantity'],
+                row['open_quantity'], row['stock_in_virginia'], row['stock_in_transit'], row['stock_at_indus'],
+                row['to_be_manufactured'], handle_missing_dates(row['indus_ship_date']), row['actual_customer'],
+                handle_missing_dates(row['actual_ship_date']), row['eta_virginia'], datetime.now()
+            ))
+
+        # Use execute_values for efficient insertion
+        execute_values(cursor, insert_query, data_tuples)
+
+        # Commit the transaction
+        conn.commit()
+        print("Data inserted successfully!")
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+    finally:
+        # Close cursor and connection
+        cursor.close()
+        conn.close()
+
+
 # Main function to process and insert data into both tables
 def run_data_update():
     try:
@@ -87,6 +139,13 @@ def run_data_update():
         transit_df = fetch_excel_data(sheet_name=transit_sheet, header=1, usecols='A:W')
         processed_transit_df = process_data_transit(transit_df)
         insert_transit_data(processed_transit_df)
+
+        # Process OOR data
+        print("Fetching and processing OOR data...")
+        oor_sheet = 'To be manufactured'
+        oor_df = fetch_oor_data(sheet_name=oor_sheet, header=0, usecols='A:W')
+        processed_oor_df = process_oor_data(oor_df)  
+        insert_oor_data(processed_oor_df)  # Insert the processed OOR data
 
     except Exception as e:
         print(f"Error in main function: {e}")
