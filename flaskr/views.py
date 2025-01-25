@@ -132,7 +132,7 @@ def get_oor_data():
             return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
 
         # Convert date columns to datetime format and format to 'dd-MMM-yy'
-        date_columns = ['Date of Receiving PO#', 'Customer Required Delivery Date', 'Indus Ship Date', 'Actual Ship Date', 'ETA Virginia']
+        date_columns = ['Date of Receiving PO#', 'Required Delivery Date', 'Indus Ship Date', 'Actual Ship Date', 'ETA Virginia']
         for col in date_columns:
             if col in df.columns:
                 # Convert to datetime, where missing values will be handled correctly
