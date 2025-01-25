@@ -470,23 +470,22 @@ header {
 }
 /* Change the background and text color for the 10th column header */
 .oor-table th:nth-child(10) {
-  background-color: #0056b3; /* Light red background */
-  color: white; /* Dark red text */
+  background-color: #66b3ff ; /* Light red background */
+  color: black; /* Dark red text */
 }
 
 /* Change the background and text color for the 11th column header */
 .oor-table th:nth-child(11) {
-  background-color: #0056b3; /* Light green background */
-  color: white; /* Dark green text */
+  background-color: #66b3ff ; /* Light green background */
+  color: black; /* Dark green text */
 }
 
 /* Change the background and text color for the 12th column header */
 .oor-table th:nth-child(12) {
-  background-color: #0056b3; /* Light blue background */
-  color: white; /* Dark blue text */
+  background-color: #66b3ff ; /* Light blue background */
+  color: black; /* Dark blue text */
 }
 .oor-table th:nth-child(13) {
-  background-color: #0056b3; /* Light blue background */
-  color: white; /* Dark blue text */
+  background-color: #66b3ff  ; /* Light blue background */
+  color: black; /* Dark blue text */
 }
-
