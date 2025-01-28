@@ -7,7 +7,7 @@ from flaskr.msal_auth import fetch_excel_data  # Importing fetch_excel_data from
 from flaskr.process_excel import process_data_inventory, process_data_transit  # Importing both functions
 
 # Database connection parameters
-uri = os.environ.get("HEROKU_POSTGRESQL_GREEN_URL")
+uri = "postgres://u5uvdmh4eki2lk:pd24f3a532c9386e873acf172a2f5a60a5a3176daa7b2f850c8c674e14bd83c6d@c9mq4861d16jlm.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d1bglbigug1dqt"
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 
