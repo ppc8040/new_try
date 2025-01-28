@@ -66,28 +66,18 @@ def create_app():
         app.register_blueprint(views, url_prefix='/views')
 
     def schedule_updates():
-    # Define the GST time zone
-    gst_timezone = pytz.timezone("Asia/Dubai")
+        import schedule
 
-    # Custom job function to run data update at specific times
-    def run_data_update_with_timezone():
-        # Get the current time in GST
-        now = datetime.now(gst_timezone)
-        print(f"Running update at GST time: {now.strftime('%Y-%m-%d %H:%M:%S')}")  
-        run_data_update()
+        # Schedule the function to run every 6 hours
+        schedule.every(6).hours.do(run_data_update)
 
-    # Job runner function to check current time and trigger updates
-    def job_runner():
-        while True:
-            #Get current GST time
-            current_time_gst = datetime.now(gst_timezone).strftime("%H:%M")
-            if current_time_gst == "07:00" or current_time_gst == "16:00":
-                run_data_update_with_timezone()
-                time.sleep(60)  # Wait for a minute to avoid running multiple times in the same minute
-            time.sleep(1)  # Check every second
+        # Run the schedule in a separate thread
+        def run_scheduler():
+            while True:
+                schedule.run_pending()
+                time.sleep(1)
 
-    # Start the job runner in a daemon thread
-    threading.Thread(target=job_runner, daemon=True).start()
+        threading.Thread(target=run_scheduler, daemon=True).start()
 
     # Start the scheduler
     schedule_updates()
