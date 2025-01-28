@@ -7,7 +7,6 @@ import time
 import threading
 from flaskr.home import home_bp
 from flaskr.views import views
-import pytz
 
 def create_app():
     app = Flask(__name__)
