@@ -2,8 +2,6 @@ from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 import pandas as pd
 from sqlalchemy import text
-from flaskr.msal_auth import fetch_excel_data
-from flaskr.process_excel import process_data_inventory, process_data_transit
 from flaskr.models import db
 
 views = Blueprint('views', __name__)
