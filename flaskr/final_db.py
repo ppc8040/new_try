@@ -11,17 +11,49 @@ uri = "postgres://u5uvdmh4eki2lk:pd24f3a532c9386e873acf172a2f5a60a5a3176daa7b2f8
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 
+# Retry parameters
+MAX_RETRIES = 5  # Maximum number of retries
+RETRY_DELAY = 2  # Delay in seconds between retries
+
+# Function to lock and delete table data safely with retry logic
+def lock_and_delete_table(cursor, table_name):
+    retry_count = 0
+    while retry_count < MAX_RETRIES:
+        try:
+            # Lock the table in EXCLUSIVE mode
+            cursor.execute(f"LOCK TABLE {table_name} IN EXCLUSIVE MODE;")
+            print(f"Locked table {table_name}. Deleting data...")
+
+            # Delete all rows from the table
+            cursor.execute(f"DELETE FROM {table_name};")
+            cursor.execute(f"SELECT COUNT(*) FROM {table_name};")
+            row_count = cursor.fetchone()[0]
+
+            if row_count == 0:
+                print(f"Table {table_name} successfully emptied.")
+                return True
+            else:
+                print(f"Table {table_name} still contains {row_count} rows.")
+                return False
+        except Exception as e:
+            retry_count += 1
+            print(f"Error during locking and deleting {table_name}: {e}. Retry {retry_count}/{MAX_RETRIES}. Retrying in {RETRY_DELAY} seconds...")
+            time.sleep(RETRY_DELAY)
+    return False
+
 # Function to insert data into inventory_db
 def insert_inventory_data(df):
     try:
         conn = psycopg2.connect(uri)
         cursor = conn.cursor()
 
-        # Clear existing data in the inventory_db table
-        cursor.execute("DELETE FROM inventory_db")
+        # Lock and delete data in the inventory_db table
+        if not lock_and_delete_table(cursor, "inventory_db"):
+            print("Failed to empty inventory_db. Aborting operation.")
+            return
 
         # Insert processed inventory data
-        for index, row in df.iterrows():
+        for _, row in df.iterrows():
             cursor.execute("""
                 INSERT INTO inventory_db (
                     cust_code, indus_part, customer_part, in_transit_stock, warehouse_stock, 
@@ -37,6 +69,7 @@ def insert_inventory_data(df):
             ))
 
         conn.commit()
+        print("Inventory data inserted successfully.")
         cursor.close()
         conn.close()
     except Exception as e:
@@ -48,11 +81,13 @@ def insert_transit_data(df):
         conn = psycopg2.connect(uri)
         cursor = conn.cursor()
 
-        # Clear existing data in the transit_db table
-        cursor.execute("DELETE FROM transit_db")
+        # Lock and delete data in the transit_db table
+        if not lock_and_delete_table(cursor, "transit_db"):
+            print("Failed to empty transit_db. Aborting operation.")
+            return
 
         # Insert processed transit data
-        for index, row in df.iterrows():
+        for _, row in df.iterrows():
             cursor.execute("""
                 INSERT INTO transit_db (
                     indus_part, customer_part_no, customer_code, pallet_qty, num_of_pallet, 
@@ -66,86 +101,76 @@ def insert_transit_data(df):
             ))
 
         conn.commit()
+        print("Transit data inserted successfully.")
         cursor.close()
         conn.close()
     except Exception as e:
         print(f"Error inserting transit data: {e}")
 
+# Function to handle missing dates
 def handle_missing_dates(date_value):
-    """Replace placeholder date or NaN with None for missing dates."""
     if date_value == '1900-01-01' or pd.isna(date_value):
         return None
     return date_value
 
+# Function to insert data into customer_orders
 def insert_oor_data(df):
     try:
         conn = psycopg2.connect(uri)
         cursor = conn.cursor()
 
-        cursor.execute("DELETE FROM customer_orders")
-        
-        # Prepare the INSERT statement
+        # Lock and delete data in the customer_orders table
+        if not lock_and_delete_table(cursor, "customer_orders"):
+            print("Failed to empty customer_orders. Aborting operation.")
+            return
+
+        # Insert processed OOR data
         insert_query = """
             INSERT INTO customer_orders (
                 customer_code, customer_po_number, date_of_receiving_po,
                 customer_required_delivery_date, sales_document, sales_document_item,
                 customer_material, indus_product, ordered_quantity, delivered_quantity,
                 open_quantity, stock_in_virginia, stock_in_transit, stock_at_indus,
-                to_be_manufactured, indus_ship_date, actual_customer, actual_ship_date, eta_virginia,last_updated
+                to_be_manufactured, indus_ship_date, actual_customer, actual_ship_date, 
+                eta_virginia, last_updated
             ) VALUES %s
         """
-
-        # Convert DataFrame to list of tuples and handle missing dates
-        data_tuples = []
-        for _, row in df.iterrows():
-            data_tuples.append((
+        data_tuples = [
+            (
                 row['customer_code'], row['customer_po_number'], handle_missing_dates(row['date_of_receiving_po']),
-                handle_missing_dates(row['customer_required_delivery_date']), row['sales_document'], row['sales_document_item'],
-                row['customer_material'], row['indus_product'], row['ordered_quantity'], row['delivered_quantity'],
-                row['open_quantity'], row['stock_in_virginia'], row['stock_in_transit'], row['stock_at_indus'],
-                row['to_be_manufactured'], handle_missing_dates(row['indus_ship_date']), row['actual_customer'],
-                handle_missing_dates(row['actual_ship_date']), row['eta_virginia'], datetime.now()
-            ))
-
-        # Use execute_values for efficient insertion
+                handle_missing_dates(row['customer_required_delivery_date']), row['sales_document'], 
+                row['sales_document_item'], row['customer_material'], row['indus_product'], 
+                row['ordered_quantity'], row['delivered_quantity'], row['open_quantity'], 
+                row['stock_in_virginia'], row['stock_in_transit'], row['stock_at_indus'], 
+                row['to_be_manufactured'], handle_missing_dates(row['indus_ship_date']), 
+                row['actual_customer'], handle_missing_dates(row['actual_ship_date']), 
+                row['eta_virginia'], datetime.now()
+            ) for _, row in df.iterrows()
+        ]
         execute_values(cursor, insert_query, data_tuples)
 
-        # Commit the transaction
         conn.commit()
-        print("Data inserted successfully!")
-
+        print("Customer orders data inserted successfully.")
     except Exception as e:
-        print(f"Error: {e}")
-
+        print(f"Error inserting customer orders data: {e}")
     finally:
-        # Close cursor and connection
         cursor.close()
         conn.close()
 
-
-# Main function to process and insert data into both tables
+# Main function to process and insert data
 def run_data_update():
     try:
-        # Process Inventory Data
         print("Fetching and processing Inventory data...")
-        inventory_sheet = 'Cus Inventory'
-        inventory_df = fetch_excel_data(sheet_name=inventory_sheet, header=1, usecols='B:S')
-        processed_inventory_df = process_data_inventory(inventory_df)
-        insert_inventory_data(processed_inventory_df)
+        inventory_df = process_data_inventory(fetch_excel_data(sheet_name="Cus Inventory", header=1, usecols="B:S"))
+        insert_inventory_data(inventory_df)
 
-        # Process Transit Data
         print("Fetching and processing Transit data...")
-        transit_sheet = 'Part wise Data'  
-        transit_df = fetch_excel_data(sheet_name=transit_sheet, header=1, usecols='A:W')
-        processed_transit_df = process_data_transit(transit_df)
-        insert_transit_data(processed_transit_df)
+        transit_df = process_data_transit(fetch_excel_data(sheet_name="Part wise Data", header=1, usecols="A:W"))
+        insert_transit_data(transit_df)
 
-        # Process OOR data
         print("Fetching and processing OOR data...")
-        oor_sheet = 'To be manufactured'
-        oor_df = fetch_oor_data(sheet_name=oor_sheet, header=0, usecols='A:W')
-        processed_oor_df = process_oor_data(oor_df)  
-        insert_oor_data(processed_oor_df)  # Insert the processed OOR data
+        oor_df = process_oor_data(fetch_oor_data(sheet_name="To be manufactured", header=0, usecols="A:W"))
+        insert_oor_data(oor_df)
 
     except Exception as e:
-        print(f"Error in main function: {e}")
+        print(f"Error in data update: {e}")
