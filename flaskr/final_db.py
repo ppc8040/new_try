@@ -4,8 +4,8 @@ import psycopg2
 import schedule
 import time
 from datetime import datetime
-from flaskr.msal_auth import fetch_excel_data  # Importing fetch_excel_data from msal_auth.py
-from flaskr.process_excel import process_data_inventory, process_data_transit  # Importing both functions
+from flaskr.msal_auth import fetch_excel_data,fetch_oor_data
+from flaskr.process_excel import process_data_inventory, process_data_transit,process_oor_data
 
 # Database connection parameters
 uri = uri = os.environ.get("HEROKU_POSTGRESQL_GREEN_URL")
