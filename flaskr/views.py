@@ -63,6 +63,7 @@ def get_transit_data():
                 eta_arrival_to_va AS "ETA Arrival to VA"
             FROM transit_db 
             WHERE customer_code = :cust_code
+            ORDER BY eta_arrival_to_va ASC
         """)
         
         # Execute the query and fetch the result into a Pandas DataFrame
@@ -118,7 +119,7 @@ def get_oor_data():
                 to_be_manufactured AS "Manufacturing WIP"
             FROM customer_orders 
             WHERE actual_customer LIKE :cust_code_filter
-            ORDER BY date_of_receiving_po ASC         
+            ORDER BY date_of_receiving_po, customer_required_delivery_date ASC         
         """)
 
         # Execute the query and fetch the result into a Pandas DataFrame
