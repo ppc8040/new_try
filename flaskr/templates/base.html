@@ -1,15 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZDM0T5XVCD"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZDM0T5XVCD"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      
+      gtag('js', new Date());
+      gtag('config', 'G-ZDM0T5XVCD');
 
-  gtag('config', 'G-ZDM0T5XVCD');
-</script>
+      {% if current_user.is_authenticated %}
+        // Send username to Google Analytics
+        gtag('set', {'user_id': '{{ current_user.username }}' });
+
+        // Log a login event
+        gtag('event', 'login', {
+          'method': 'form',
+          'user_id': '{{ current_user.username }}'
+        });
+
+        // Start session timer
+        var sessionStartTime = Date.now();
+
+        // Track session duration on logout
+        window.addEventListener('beforeunload', function() {
+            var sessionEndTime = Date.now();
+            var sessionDuration = Math.round((sessionEndTime - sessionStartTime) / 1000);  // Convert ms to seconds
+            
+            fetch('/track-logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: '{{ current_user.username }}',
+                    session_time: sessionDuration
+                })
+            });
+
+            gtag('event', 'session_end', {
+                'user_id': '{{ current_user.username }}',
+                'session_time': sessionDuration
+            });
+        });
+      {% endif %}
+    </script>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
