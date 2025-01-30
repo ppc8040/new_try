@@ -26,6 +26,11 @@
         </label>
     </div>
 
+        <div class="download_container">
+        <!-- Download Excel Button -->
+        <button class="download-btn" onclick="window.location.href='{{ url_for('views.download_all_tables') }}'">Download Excel</button>
+    </div>
+
     <!-- Table Section for Inventory -->
     {% if active_tab == 'Inventory' %}
     <div class="data-table">
