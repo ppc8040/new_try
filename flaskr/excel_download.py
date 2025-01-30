@@ -1,7 +1,7 @@
 import pandas as pd
 from io import BytesIO
 from sqlalchemy import create_engine, text
-import XlsxWriter
+import xlsxwriter
 from datetime import datetime
 
 # PostgreSQL Database URI (Ensure the prefix fix is applied)
