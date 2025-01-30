@@ -489,3 +489,25 @@ header {
   background-color: #66b3ff  ; /* Light blue background */
   color: black; /* Dark blue text */
 }
+
+.download_container {
+  display: flex;
+  justify-content: flex-end; /* Aligns the button to the right */
+  padding-right: 20px;
+}
+
+.download-btn {
+  font-size: 13px; /* Smaller text size */
+  background-color: #007bff; /* Blue background */
+  color: white; /* White text */
+  border: none;
+  border-radius: 5px; /* Rounded corners */
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
+  padding-right: 10px;
+}
+
+.download-btn:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}
+
