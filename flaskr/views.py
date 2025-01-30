@@ -3,6 +3,8 @@ from flask_login import login_required, current_user
 import pandas as pd
 from sqlalchemy import text
 from flaskr.models import db
+from flaskr.excel_download import generate_excel_file
+from flask import send_file
 
 views = Blueprint('views', __name__)
 
@@ -182,3 +184,23 @@ def oor():
     tabs_data = {'Open Order': oor_data}  # Show OOR data
     hide_oor_button = current_user.username in ['CPT', '001WFI', '001SCT', '001RDT']
     return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Open Order',hide_oor_button =hide_oor_button)
+
+@views.route('/download-all')
+@login_required
+def download_all_tables():
+    # Get the logged-in username
+    username = current_user.username
+    
+    # Call function to generate the Excel file
+    excel_file, file_name = generate_excel_file(username)  # Unpack the returned tuple
+
+    if excel_file is None:
+        return "Failed to generate Excel file", 500
+
+    return send_file(
+        excel_file,
+        as_attachment=True,
+        download_name=file_name,  # Use the correct filename
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
