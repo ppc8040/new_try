@@ -86,8 +86,12 @@ def generate_excel_file(username):
         # Conditionally fetch OOR data based on username
         exclude_oor_users = ['001CPT-AT', '001WFI', '001SCT', '001RDT']
         oor_data = None
+        if len(username) == 3:
+            cust_code_filter = username
+        else:
+            cust_code_filter = username[3:6]
         if username not in exclude_oor_users:
-            oor_data = fetch_data(oor_query, {'cust_code_filter': f'%{username[3:6]}%'})
+            oor_data = fetch_data(oor_query, {'cust_code_filter': f'%{cust_code_filter}%'})
 
         # Convert date columns to the format 'dd-MMM-yy'
         for df, date_columns in [
