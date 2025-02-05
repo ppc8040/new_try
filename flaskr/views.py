@@ -101,7 +101,12 @@ def get_transit_data():
 def get_oor_data():
     try:
         # Extract the customer code from the current user's username (cust_code_filter)
-        cust_code_filter = current_user.username[3:6]
+        if len(current_user.username) == 3:
+            cust_code_filter = current_user.username
+        else:
+            cust_code_filter = current_user.username[3:6]
+        if not cust_code_filter.strip():  # .strip() handles whitespace too
+            return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
         
         # Define the SQL query to fetch the OOR data
         query = text("""
