@@ -184,12 +184,6 @@ def home():
         'OOR': oor_data
     }  
     hidden_tabs = get_hidden_tabs(current_user.username)
-    if not hidden_tabs["hide_inventory_button"]:
-        default_tab = 'Inventory'
-    elif not hidden_tabs["hide_transit_button"]:
-        return redirect(url_for('views.transit'))  # Redirect if Inventory is hidden
-    else hidden_tabs["hide_oor_button"]:
-        return redirect(url_for('views.oor'))  # Redirect if Inventory & Transit are hidden
     return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Inventory',**hidden_tabs)
 
 # Route for the Transit tab
