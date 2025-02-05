@@ -156,6 +156,22 @@ def get_oor_data():
     except Exception as e:
         return {'headers': ["Error"], 'rows': [[str(e)]]}
 
+def get_hidden_tabs(username):
+    hidden_tabs = {
+        "OOR": {'001CPT-AT', '001WFI', '001SCT', '001RDT'},
+        "Transit": {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'},
+        "Inventory": {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'},
+        "Release": {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'}
+    }
+
+    return {
+        "hide_oor_button": username in hidden_tabs["OOR"],
+        "hide_transit_button": username in hidden_tabs["Transit"],
+        "hide_inventory_button": username in hidden_tabs["Inventory"],
+        "hide_release_button": username in hidden_tabs["Release"]
+    }
+
+
 
 # Route for the Dashboard (default view shows Inventory)
 @views.route('/')
@@ -168,9 +184,15 @@ def home():
         'Inventory': inventory_data,
         'Transit': transit_data,
         'OOR': oor_data
-    }  # Display all tabs
-    hide_oor_button = current_user.username in ['001CPT-AT', '001WFI', '001SCT', '001RDT']
-    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Inventory',hide_oor_button = hide_oor_button)
+    }  
+    hidden_tabs = get_hidden_tabs(current_user.username)
+    if not hidden_tabs["hide_inventory_button"]:
+        default_tab = 'Inventory'
+    elif not hidden_tabs["hide_transit_button"]:
+        return redirect(url_for('views.transit'))  # Redirect if Inventory is hidden
+    else hidden_tabs["hide_oor_button"]:
+        return redirect(url_for('views.oor'))  # Redirect if Inventory & Transit are hidden
+    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Inventory',**hidden_tabs)
 
 # Route for the Transit tab
 @views.route('/transit')
@@ -178,8 +200,8 @@ def home():
 def transit():
     transit_data = get_transit_data()  # Get Transit data
     tabs_data = {'Transit': transit_data}  # Show Transit data
-    hide_oor_button = current_user.username in ['001CPT-AT', '001WFI', '001SCT', '001RDT']
-    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Transit',hide_oor_button=hide_oor_button)
+    hidden_tabs = get_hidden_tabs(current_user.username)
+    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Transit',**hidden_tabs)
 
 # Route for the OOR tab
 @views.route('/open-order')
@@ -187,8 +209,8 @@ def transit():
 def oor():
     oor_data = get_oor_data()  # Get OOR data
     tabs_data = {'Open Order': oor_data}  # Show OOR data
-    hide_oor_button = current_user.username in ['CPT', '001WFI', '001SCT', '001RDT']
-    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Open Order',hide_oor_button =hide_oor_button)
+    hidden_tabs = get_hidden_tabs(current_user.username)
+    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Open Order',**hidden_tabs)
 
 @views.route('/download-all')
 @login_required
