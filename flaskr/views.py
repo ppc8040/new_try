@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request,jsonify, redirect,url_for
 from flask_login import login_required, current_user
 import pandas as pd
 from sqlalchemy import text
@@ -160,13 +160,15 @@ def get_hidden_tabs(username):
     hidden_tabs = {
         "OOR": {'001CPT-AT', '001WFI', '001SCT', '001RDT'},
         "Transit": {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'},
-        "Inventory": {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'}
+        "Inventory": {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'},
+        "Release": {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'}
     }
 
     return {
         "hide_oor_button": username in hidden_tabs["OOR"],
         "hide_transit_button": username in hidden_tabs["Transit"],
-        "hide_inventory_button": username in hidden_tabs["Inventory"]
+        "hide_inventory_button": username in hidden_tabs["Inventory"],
+        "hide_release_button": username in hidden_tabs["Release"]
     }
 
 
@@ -184,6 +186,12 @@ def home():
         'OOR': oor_data
     }  
     hidden_tabs = get_hidden_tabs(current_user.username)
+    if not hidden_tabs["hide_inventory_button"]:
+        default_tab = 'Inventory'
+    elif not hidden_tabs["hide_transit_button"]:
+        return redirect(url_for('views.transit'))  # Redirect if Inventory is hidden
+    else:
+        return redirect(url_for('views.oor'))  # Redirect if Inventory & Transit are hidden
     return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Inventory',**hidden_tabs)
 
 # Route for the Transit tab
