@@ -125,6 +125,7 @@ header {
 }
 
 .table-wrapper {
+  position: relative;
   width: 100%; /* Ensure the wrapper spans the full container width */
   height: 100%; /* Allow the wrapper to take full height of its parent */
   overflow: hidden; /* Hide overflow for neatness */
@@ -302,7 +303,7 @@ header {
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on mobile devices */
   border: 1px solid #ddd; /* Optional: Border around the table container */
   box-sizing: border-box; /* Ensure padding and borders are included in the total width/height */
-  margin-bottom: 200px;
+  margin-bottom: 20px;
 }
 
 /* Table styles */
@@ -337,7 +338,7 @@ header {
   border-collapse: collapse; /* Collapse table borders */
   background-color: #ffffff; /* Set background color to white */
   margin-top: 0px; /* Add space on top of the table */
-  margin-bottom: 100px;
+  margin-bottom: 50px;
 }
 
 /* Styling for Inventory table headers */
@@ -383,7 +384,7 @@ header {
   border-collapse: collapse; /* Collapse table borders */
   background-color: #ffffff; /* Set background color to white */
   margin-top: 0px; /* Add space on top of the table */
-  margin-bottom: 100px;
+  margin-bottom: 50px;
 }
 
 /* Styling for Transit table headers */
@@ -429,7 +430,7 @@ header {
   border-collapse: collapse; /* Collapse table borders */
   background-color: #ffffff; /* Set background color to white */
   margin-top: 0px; /* Add space on top of the table */
-  margin-bottom: 100px;
+  margin-bottom: 50px;
 }
 
 /* Styling for OOR table headers */
