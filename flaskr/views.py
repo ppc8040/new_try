@@ -160,15 +160,13 @@ def get_hidden_tabs(username):
     hidden_tabs = {
         "OOR": {'001CPT-AT', '001WFI', '001SCT', '001RDT'},
         "Transit": {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'},
-        "Inventory": {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'},
-        "Release": {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'}
+        "Inventory": {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'}
     }
 
     return {
         "hide_oor_button": username in hidden_tabs["OOR"],
         "hide_transit_button": username in hidden_tabs["Transit"],
-        "hide_inventory_button": username in hidden_tabs["Inventory"],
-        "hide_release_button": username in hidden_tabs["Release"]
+        "hide_inventory_button": username in hidden_tabs["Inventory"]
     }
 
 
