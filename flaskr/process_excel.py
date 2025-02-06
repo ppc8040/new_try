@@ -5,7 +5,7 @@ def process_data_inventory(df):
     df = df.fillna('')  # Fill missing values with empty string
     
     # Drop unnecessary columns
-    columns_to_drop = ['Nos of PCS/Pallet', 'Safety Stock', 'Qty Held against existing orders awaiting pickup']
+    columns_to_drop = ['Nos of PCS/Pallet', 'Safety Stock']
     df = df.drop(columns=columns_to_drop, errors='ignore')
     
     # Rename columns for consistency
