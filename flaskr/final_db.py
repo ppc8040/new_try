@@ -6,7 +6,7 @@ import schedule
 import time
 from datetime import datetime
 from flaskr.msal_auth import fetch_excel_data,fetch_oor_data
-from flaskr.process_excel import process_data_inventory, process_data_transit,process_oor_data
+from flaskr.process_excel import process_data_inventory, process_data_transit,process_oor_data, process_data_int_stock
 
 # Database connection parameters
 uri = uri = os.environ.get("HEROKU_POSTGRESQL_GREEN_URL")
@@ -159,6 +159,39 @@ def insert_oor_data(df):
         cursor.close()
         conn.close()
 
+def insert_int_stock_data(df):
+    try:
+        conn = psycopg2.connect(uri)
+        cursor = conn.cursor()
+
+        # Lock and delete data in the int_stock_db table
+        if not lock_and_delete_table(cursor, "int_stock_db"):
+            print("Failed to empty int_stock_db. Aborting operation.")
+            return
+
+        # Insert processed INT stock data
+        for _, row in df.iterrows():
+            cursor.execute("""
+                INSERT INTO int_stock_db (
+                    item, customer_part, quantity, qty_reserved, alt_1_qty, 
+                    grs_weight, pallet_size, customer_code, last_updated
+                ) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                row['Item'], row['Customer Part'], row['Quantity'], row['Qty Reserved'], row['Alt 1 Qty'], 
+                row['Grs Weight'], row['Pallet size'], row['Customer Code'], 
+                datetime.now()
+            ))
+
+        conn.commit()
+        print("int_stock data inserted successfully.")
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error inserting int_stock data: {e}")
+
+
+
 # Main function to process and insert data
 def run_data_update():
     try:
@@ -173,6 +206,10 @@ def run_data_update():
         print("Fetching and processing OOR data...")
         oor_df = process_oor_data(fetch_oor_data(sheet_name="To be manufactured", header=0, usecols="A:W"))
         insert_oor_data(oor_df)
+
+        print("Fetching and processing INT_Stock data...")
+        inventory_int_stock_df = process_data_int_stock(fetch_excel_data(sheet_name="INT_Stock", header=0, usecols="A:S"))
+        insert_int_stock_data(inventory_int_stock_df)
 
     except Exception as e:
         print(f"Error in data update: {e}")
