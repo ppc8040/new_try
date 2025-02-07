@@ -512,3 +512,95 @@ header {
   background-color: #0056b3; /* Darker blue on hover */
 }
 
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background-color: white;
+  margin: 10% auto;
+  padding: 20px;
+  width: 60%;
+  border-radius: 10px;
+  box-shadow: 0px 0px 10px #000;
+}
+
+.close-btn {
+  float: right;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* Styling for the Releases table */
+.releases-table {
+  width: 100%; /* Full width */
+  border-collapse: collapse; /* Collapse borders */
+  background-color: #ffffff; /* White background */
+  margin-top: 0px; /* Align with other tables */
+  margin-bottom: 50px; /* Space below the table */
+  table-layout: fixed;
+}
+
+.releases-table th {
+  padding: 12px 15px; /* Padding for spacing */
+  text-align: center; /* Center-align header text */
+  background-color: #007bff; /* Same blue header as Inventory */
+  color: white; /* White text for contrast */
+  border: 1px solid #ddd; /* Light border */
+  font-weight: bold; /* Bold header text */
+}
+
+/* Styling for Releases table rows */
+.releases-table td {
+  padding: 10px 12px; /* Padding inside cells */
+  text-align: right; /* Right-align text */
+  border: 1px solid #ddd; /* Light border */
+  color: #333; /* Dark gray text */
+}
+
+/* Set a fixed height for table rows */
+.releases-table tr {
+  height: 20px; /* Adjust row height */
+  overflow: hidden; /* Prevent text overflow */
+}
+
+/* Match table headers and data cell height */
+.releases-table td, 
+.releases-table th {
+  height: 20px; /* Same height as rows */
+  vertical-align: middle; /* Center text vertically */
+}
+
+/* Prevent large content from affecting row height */
+.releases-table td {
+  max-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis; /* '...' if content overflows */
+}
+
+/* Hover effect */
+.releases-table tr:hover {
+  background-color: #f5f5f5; /* Light gray on hover */
+}
+
+/* Alternate row colors */
+.releases-table tr:nth-child(even) {
+  background-color: #f9f9f9; /* Light gray for even rows */
+}
+
+.pallet-input {
+  width: 100%;        /* Make the input take up 100% of the available width in the td */
+  box-sizing: border-box; /* Ensures padding doesn't affect the width calculation */
+  padding: 5px;       /* Optional: Add padding inside the input */
+  border: 1px solid #ccc; /* Optional: Border for the input */
+  border-radius: 4px; /* Optional: Rounded corners */
+}
+
