@@ -97,3 +97,6 @@ class int_stock(db.Model):
     pallet_size = db.Column(db.Numeric(10, 0), nullable=False) 
     customer_code = db.Column(db.String(100), nullable=False)  
     last_updated = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+
+    def __repr__(self):
+        return f'<int_stock {self.id}>'
