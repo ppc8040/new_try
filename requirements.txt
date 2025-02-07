@@ -33,3 +33,4 @@ Werkzeug==3.1.3
 schedule==1.2.0
 pytz==2024.2
 XlsxWriter
+Flask-Mail==0.10.0
