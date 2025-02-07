@@ -5,6 +5,9 @@ from sqlalchemy import text
 from flaskr.models import db
 from flaskr.excel_download import generate_excel_file
 from flask import send_file
+from datetime import datetime
+from flaskr.mail_config import mail
+from flask_mail import Message
 
 views = Blueprint('views', __name__)
 
@@ -156,6 +159,39 @@ def get_oor_data():
     except Exception as e:
         return {'headers': ["Error"], 'rows': [[str(e)]]}
 
+def get_int_stock_data():
+    try:
+        query = text("""
+            SELECT 
+                customer_code AS "Customer Code",
+                customer_part AS "Customer Part",     
+                item AS "Indus Part", 
+                pallet_size AS "Coils/Pallet",
+                alt_1_qty AS "Number of Pallets", 
+                quantity AS "Quantity"
+            FROM INT_stock_db 
+            WHERE customer_code = :customer_code
+            ORDER BY alt_1_qty DESC
+        """)
+
+        # Execute the query and fetch the result into a Pandas DataFrame
+        result = db.session.execute(query, {'customer_code': current_user.username})
+        df = pd.DataFrame(result.fetchall(), columns=result.keys())
+
+        if not df.empty:
+            table_headers = df.columns.tolist()
+            table_rows = df.values.tolist()
+        else:
+            table_headers = ["No inventory available for releases"]
+            table_rows = [[""]]
+
+        return {'headers': table_headers, 'rows': table_rows}
+
+    except Exception as e:
+        return {'headers': ["Error"], 'rows': [[str(e)]]}
+
+
+
 def get_hidden_tabs(username):
     hidden_tabs = {
         "OOR": {'001CPT-AT', '001WFI', '001SCT', '001RDT'},
@@ -180,10 +216,12 @@ def home():
     inventory_data = get_inventory_data()  # Get Inventory data
     transit_data = get_transit_data()  # Get Transit data
     oor_data = get_oor_data()
+    releases = get_int_stock_data()
     tabs_data = {
         'Inventory': inventory_data,
         'Transit': transit_data,
-        'OOR': oor_data
+        'OOR': oor_data,
+        'Releases': releases
     }  
     hidden_tabs = get_hidden_tabs(current_user.username)
     if not hidden_tabs["hide_inventory_button"]:
@@ -212,6 +250,14 @@ def oor():
     hidden_tabs = get_hidden_tabs(current_user.username)
     return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Open Order',**hidden_tabs)
 
+@views.route('/releases')
+@login_required
+def releases():
+    releases = get_int_stock_data()  # Fetch INT Stock data
+    tabs_data = {'Releases': releases}  # Prepare data for rendering
+    hidden_tabs = get_hidden_tabs(current_user.username)
+    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Releases', **hidden_tabs)
+
 @views.route('/download-all')
 @login_required
 def download_all_tables():
@@ -230,4 +276,65 @@ def download_all_tables():
         download_name=file_name,  # Use the correct filename
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+@views.route('/submit-releases', methods=['POST'])
+@login_required
+def submit_releases():
+    if not request.is_json:
+        return jsonify({"error": "Invalid Content-Type"}), 400
+
+    request_json = request.get_json()
+    data = request_json.get('data', [])
+
+    if not data:
+        return jsonify({"error": "No 'data' field in request JSON"}), 400
+
+    try:
+        # Process data and insert into DB
+        for row in data:
+            if len(row) < 7:
+                return jsonify({"error": "Invalid row format"}), 400
+
+            query = text("""
+                INSERT INTO releases_db 
+                (customer_code, customer_part, indus_part, coils_per_pallet, no_of_pallets, quantity, pallets_for_release, requested_at)
+                VALUES 
+                (:customer_code, :customer_part, :indus_part, :coils_per_pallet, :no_of_pallets, :quantity, :pallets_for_release, :requested_at)
+            """)
+            db.session.execute(query, {
+                'customer_code': row[0],
+                'customer_part': row[1],
+                'indus_part': row[2],
+                'coils_per_pallet': row[3],
+                'no_of_pallets': row[4],
+                'quantity': row[5],
+                'pallets_for_release': int(row[6]),
+                'requested_at': datetime.now()
+            })
+
+        db.session.commit()
+
+        # Convert table data to HTML for email
+        table_html = "<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse;'>"
+        table_html += "<tr><th>Customer Code</th><th>Customer Part</th><th>Indus Part</th><th>Coils Per Pallet</th><th>No of Pallets</th><th>Quantity</th><th>Pallets for Release</th></tr>"
+        for row in data:
+            table_html += "<tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>"
+        table_html += "</table>"
+
+        # Email Configuration
+        recipient_email = ["ppc@indusair.ae","hitesh.moghariya@indusair.ae","logisticsdbx2@indusair.ae", "logisticsdbx@indusair.ae"]  # Fixed recipient
+        msg = Message("New Release Request", recipients=recipient_email)
+        msg.html = f"""
+            <p>A new release request has been submitted. Below are the details:</p>
+            {table_html}
+            <p>Best Regards,<br>Your System</p>
+        """
+        mail.send(msg)
+
+        return jsonify({"success": "Releases submitted successfully, email sent to ppc@indusair.ae!"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 
