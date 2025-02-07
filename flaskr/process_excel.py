@@ -133,3 +133,31 @@ def process_oor_data(df):
     df['eta_virginia'] = None
 
     return df
+
+def process_data_int_stock(df):
+    # Fill missing values with empty strings
+    df = df.fillna('')
+
+    # Drop unnecessary columns
+    columns_to_drop = [
+        'Warehouse', 'Lot', 'Category', 'Receipt Date',
+        'Description', 'Status Qty', 'Unit', 'Alt 1 Unit', 'Days', 'Cross check','Aging'
+    ]
+    df = df.drop(columns=columns_to_drop, errors='ignore')
+
+    # Convert necessary columns to numeric (in case some contain strings)
+    for col in ['Alt 1 Qty', 'Quantity', 'Qty Reserved', 'Grs Weight']:
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
+    # Pivot table
+    df_pivot = df.pivot_table(
+        index=['Customer Code', 'Item', 'Customer Part', 'Pallet size'],
+        values=['Alt 1 Qty', 'Quantity', 'Qty Reserved', 'Grs Weight'],
+        aggfunc='sum',
+        fill_value=0
+    )
+
+    # Reset index if needed
+    df_pivot = df_pivot.reset_index()
+
+    return df_pivot
