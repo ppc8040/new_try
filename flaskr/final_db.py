@@ -60,14 +60,14 @@ def insert_inventory_data(df):
                 INSERT INTO inventory_db (
                     cust_code, indus_part, customer_part, in_transit_stock, warehouse_stock, 
                     days_0_30, days_31_60, days_61_90, days_91_120, days_121_180, days_181_240, 
-                    days_gt_240, warehouse_transit, pallet_size_cms, pcs_per_pallet, last_updated
+                    days_gt_240, warehouse_transit, pallet_size_cms, pcs_per_pallet, last_updated, reserved_qty
                 ) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 row['Cust Code'], row['Indus Part'], row['Customer Part'], row['In Transit Stock'], row['Warehouse Stock'],
                 row['0-30 Days'], row['31-60 Days'], row['61-90 Days'], row['91-120 Days'], row['121-180 Days'], 
                 row['181-240 Days'], row['>240 Days'], row['Warehouse+Transit'], row['Pallet Size Cms'], 
-                row['Pcs per pallet'], datetime.now()
+                row['Pcs per pallet'], datetime.now(), row['Qty Held against existing orders awaiting pickup']
             ))
 
         conn.commit()
