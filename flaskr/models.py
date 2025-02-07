@@ -100,3 +100,19 @@ class int_stock(db.Model):
 
     def __repr__(self):
         return f'<int_stock {self.id}>'
+
+class Release(db.Model):
+    __tablename__ = 'releases_db'  # Matches your database table name
+
+    id = db.Column(db.Integer, primary_key=True)
+    customer_code = db.Column(db.String(100), nullable=False)
+    customer_part = db.Column(db.String(100), nullable=True)   
+    indus_part = db.Column(db.String(100), nullable=False)  
+    coils_per_pallet = db.Column(db.Numeric(10, 0), nullable=False)  
+    no_of_pallets = db.Column(db.Numeric(10, 0), nullable=False)  
+    quantity = db.Column(db.Integer, nullable=False)  
+    pallets_for_release = db.Column(db.Integer, nullable=True)  
+    requested_at = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
+
+    def __repr__(self):
+        return f'<Release {self.id}>'
