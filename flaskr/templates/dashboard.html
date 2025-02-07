@@ -137,9 +137,70 @@
         {% endif %}
     </div>
     {% endif %}
+
+    {% if active_tab == 'Releases' %}
+    <div class="data-table">
+        {% if tabs_data['Releases'] %}
+        <div class="table-wrapper">
+            <div class="table-scroll-container">
+                <table class="releases-table">
+                    <thead>
+                        <tr>
+                            {% for header in tabs_data['Releases'].headers %}
+                            <th>{{ header }}</th>
+                            {% endfor %}
+                            <th>No. of pallets for Release</th> <!-- New Input Column -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in tabs_data['Releases'].rows %}
+                        <tr>
+                            {% for col in row %}
+                            <td>{{ col }}</td>
+                            {% endfor %}
+                            <td>
+                                <input type="number" class="pallet-input" data-index="{{ loop.index0 }}" min="0">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button onclick="confirmRelease()" class="confirm-button">Confirm</button> <!-- Confirm Button -->
+        </div>
+        
+        
+        <!-- Popup Modal -->
+        <div id="releaseModal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+                <h2>Confirm Release</h2>
+                <table id="releaseSummaryTable">
+                    <thead>
+                        <tr>
+                            {% for header in tabs_data['Releases'].headers %}
+                            <th>{{ header }}</th>
+                            {% endfor %}
+                            <th>No. of pallets for Release</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Selected rows will be added here via JavaScript -->
+                    </tbody>
+                </table>
+                <button onclick="submitReleaseData()">Submit</button>
+            </div>
+        </div>
+        
+        {% else %}
+        <p>No inventory available for releases.</p>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 <!-- Link to the JavaScript file -->
 <script src="{{ url_for('static', filename='filter.js') }}"></script>
+<script src="{{ url_for('static', filename='release.js') }}"></script>
 
 {% endblock %}
