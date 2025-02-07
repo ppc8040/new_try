@@ -17,6 +17,9 @@ function filterTable() {
             getColumnIndex(table, 'Customer Part'),
             getColumnIndex(table, 'Customer PO#') // Include both columns
         ];
+    } } else if (activeTab.includes('Releases')) {
+        table = document.querySelector('.releases-table');
+        columnIndices = [getColumnIndex(table, 'Customer Part')];
     }
 
     if (table && columnIndices.length > 0) {
