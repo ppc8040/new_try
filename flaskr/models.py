@@ -36,6 +36,7 @@ class Inventory(db.Model):
     pallet_size_cms = db.Column(db.Integer, nullable=False)
     pcs_per_pallet = db.Column(db.Integer, nullable=False)
     last_updated = db.Column(db.DateTime, nullable=False)
+    reserved_qty = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
         return f'<Inventory {self.id}>'
