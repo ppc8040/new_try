@@ -84,3 +84,16 @@ class OOR_db(db.Model):
 
     def __repr__(self):
         return f"<OOR_db {self.customer_code}>"
+
+class int_stock(db.Model):
+    __tablename__ = 'int_stock_db'
+    id = db.Column(db.Integer, primary_key=True)
+    item = db.Column(db.String(100), nullable=False)
+    customer_part = db.Column(db.String(100), nullable=True)
+    quantity = db.Column(db.Integer, nullable=False)
+    qty_reserved = db.Column(db.Integer, nullable=False)
+    alt_1_qty = db.Column(db.Numeric(10, 0), nullable=False)  
+    grs_weight = db.Column(db.Numeric(10, 2), nullable=False)  
+    pallet_size = db.Column(db.Numeric(10, 0), nullable=False) 
+    customer_code = db.Column(db.String(100), nullable=False)  
+    last_updated = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
