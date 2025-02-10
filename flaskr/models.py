@@ -25,6 +25,7 @@ class Inventory(db.Model):
     customer_part = db.Column(db.String(100), nullable=False)
     in_transit_stock = db.Column(db.Integer, nullable=False)
     warehouse_stock = db.Column(db.Integer, nullable=False)
+    reserved_qty = db.Column(db.Integer, nullable=False)
     days_0_30 = db.Column(db.Integer, nullable=False)
     days_31_60 = db.Column(db.Integer, nullable=False)
     days_61_90 = db.Column(db.Integer, nullable=False)
@@ -36,8 +37,7 @@ class Inventory(db.Model):
     pallet_size_cms = db.Column(db.Integer, nullable=False)
     pcs_per_pallet = db.Column(db.Integer, nullable=False)
     last_updated = db.Column(db.DateTime, nullable=False)
-    reserved_qty = db.Column(db.Integer, nullable=False)
-
+    
     def __repr__(self):
         return f'<Inventory {self.id}>'
     
