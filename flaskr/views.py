@@ -6,8 +6,7 @@ from flaskr.models import db
 from flaskr.excel_download import generate_excel_file
 from flask import send_file
 from datetime import datetime
-from flaskr.mail_config import mail
-from flask_mail import Message
+from flaskr.mail_config import send_email_graph_api
 
 views = Blueprint('views', __name__)
 
@@ -280,20 +279,24 @@ def download_all_tables():
 @views.route('/submit-releases', methods=['POST'])
 @login_required
 def submit_releases():
+    username = current_user.username
+
+    # Ensure request contains JSON data
     if not request.is_json:
-        return jsonify({"error": "Invalid Content-Type"}), 400
+        return jsonify({"error": "Invalid Content-Type. Expecting JSON."}), 400
 
     request_json = request.get_json()
     data = request_json.get('data', [])
 
+    # Check if the 'data' field is empty or missing
     if not data:
-        return jsonify({"error": "No 'data' field in request JSON"}), 400
+        return jsonify({"error": "No 'data' field found in request JSON or it's empty."}), 400
 
     try:
-        # Process data and insert into DB
+        # Insert data into the database
         for row in data:
             if len(row) < 7:
-                return jsonify({"error": "Invalid row format"}), 400
+                return jsonify({"error": "Invalid row format. Each row must have at least 7 values."}), 400
 
             query = text("""
                 INSERT INTO releases_db 
@@ -301,6 +304,7 @@ def submit_releases():
                 VALUES 
                 (:customer_code, :customer_part, :indus_part, :coils_per_pallet, :no_of_pallets, :quantity, :pallets_for_release, :requested_at)
             """)
+
             db.session.execute(query, {
                 'customer_code': row[0],
                 'customer_part': row[1],
@@ -312,29 +316,37 @@ def submit_releases():
                 'requested_at': datetime.now()
             })
 
-        db.session.commit()
+        db.session.commit()  # Commit only after all inserts succeed
 
-        # Convert table data to HTML for email
-        table_html = "<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse;'>"
-        table_html += "<tr><th>Customer Code</th><th>Customer Part</th><th>Indus Part</th><th>Coils Per Pallet</th><th>No of Pallets</th><th>Quantity</th><th>Pallets for Release</th></tr>"
-        for row in data:
-            table_html += "<tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>"
-        table_html += "</table>"
+    except Exception as db_error:
+        db.session.rollback()  # Rollback only if there was a DB failure
+        return jsonify({"error": f"Database error: {str(db_error)}"}), 500
 
-        # Email Configuration
-        recipient_email = ["ppc@indusair.ae","hitesh.moghariya@indusair.ae","logisticsdbx2@indusair.ae", "logisticsdbx@indusair.ae"]  # Fixed recipient
-        msg = Message("New Release Request", recipients=recipient_email)
-        msg.html = f"""
-            <p>A new release request has been submitted. Below are the details:</p>
-            {table_html}
-            <p>Best Regards,<br>Your System</p>
-        """
-        mail.send(msg)
+    # Convert table data to HTML for email
+    table_html = "<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse;'>"
+    table_html += "<tr><th>Customer Code</th><th>Customer Part</th><th>Indus Part</th><th>Coils Per Pallet</th><th>No of Pallets</th><th>Quantity</th><th>Pallets for Release</th></tr>"
+    for row in data:
+        table_html += "<tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>"
+    table_html += "</table>"
 
-        return jsonify({"success": "Releases submitted successfully, email sent to ppc@indusair.ae!"}), 200
+    recipient_email = ["ppc@indusair.ae"]
+    subject = f"{username}_New Release Request"
+    body = f"""
+        <p>A new release request has been submitted. Below are the details:</p>
+        {table_html}
+        <p>Best Regards,<br>Your System</p>
+    """
 
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+    try:
+        # Send email using Microsoft Graph API
+        email_response = send_email_graph_api(recipient_email, subject, body)
+        
+        if email_response["status"] == "success":
+            return jsonify({"success": "Releases submitted successfully, email sent!"}), 200
+        else:
+            return jsonify({"error": f"Email sending failed: {email_response['message']}"}), 500
+
+    except Exception as email_error:
+        return jsonify({"error": f"An error occurred while sending the email: {str(email_error)}"}), 500
 
 
