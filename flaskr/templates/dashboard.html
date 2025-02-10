@@ -24,6 +24,11 @@
             <button class="tab-btn {% if active_tab == 'Open Order' %}active{% endif %}" 
                     onclick="window.location.href='{{ url_for('views.oor') }}'">Open Order</button>
             {% endif %}
+            <!-- Hidden for now
+            {% if not hide_release_button %}
+            <button class="tab-btn {% if active_tab == 'Releases' %}active{% endif %}" 
+                    onclick="window.location.href='{{ url_for('views.releases') }}'">Releases</button>
+            {% endif %}    -->
         </div>
 
 
