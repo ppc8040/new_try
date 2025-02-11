@@ -112,9 +112,7 @@ def get_oor_data():
 
         # Check if the user is in the hidden_tab for OOR
         hidden_tabs_status = get_hidden_tabs(current_user.username)
-        print(hidden_tabs_status)
         hide_stock_columns = hidden_tabs_status["hide_transit_button"]
-        print(hide_stock_columns)
 
         query = text("""
             SELECT 
