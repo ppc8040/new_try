@@ -18,7 +18,7 @@ function filterTable() {
             getColumnIndex(table, 'Customer PO#') // Include both columns
         ];
     } else if (activeTab.includes('Releases')) {
-        table = document.querySelector('.releases-table');
+        table = document.querySelector('.releases-table1');
         columnIndices = [getColumnIndex(table, 'Customer Part')];
     }
 
