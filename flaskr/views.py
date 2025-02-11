@@ -109,8 +109,13 @@ def get_oor_data():
             cust_code_filter = current_user.username[3:6]
         if not cust_code_filter.strip():  # .strip() handles whitespace too
             return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
-        
-        # Define the SQL query to fetch the OOR data
+
+        # Check if the user is in the hidden_tab for OOR
+        hidden_tabs_status = get_hidden_tabs(current_user.username)
+        print(hidden_tabs_status)
+        hide_stock_columns = hidden_tabs_status["hide_transit_button"]
+        print(hide_stock_columns)
+
         query = text("""
             SELECT 
                 actual_customer AS "Customer Code", 
@@ -122,15 +127,14 @@ def get_oor_data():
                 ordered_quantity AS "Ordered Quantity", 
                 delivered_quantity AS "Delivered Quantity", 
                 open_quantity AS "Open Quantity", 
-                stock_in_virginia AS "Stock in Virginia", 
-                stock_in_transit AS "Stock in Transit", 
+                """ + ("" if hide_stock_columns else "stock_in_virginia AS \"Stock in Virginia\", stock_in_transit AS \"Stock in Transit\", ") + """
                 stock_at_indus AS "Stock at Indus- Dubai", 
                 to_be_manufactured AS "Manufacturing WIP"
             FROM customer_orders 
             WHERE actual_customer LIKE :cust_code_filter
-            ORDER BY customer_required_delivery_date, date_of_receiving_po ASC         
+            ORDER BY date_of_receiving_po, customer_required_delivery_date ASC         
         """)
-
+        
         # Execute the query and fetch the result into a Pandas DataFrame
         result = db.session.execute(query, {'cust_code_filter': f'%{cust_code_filter}%'})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
