@@ -24,11 +24,11 @@
             <button class="tab-btn {% if active_tab == 'Open Order' %}active{% endif %}" 
                     onclick="window.location.href='{{ url_for('views.oor') }}'">Open Order</button>
             {% endif %}
-            <!-- Hidden for now
+            
             {% if not hide_release_button %}
             <button class="tab-btn {% if active_tab == 'Releases' %}active{% endif %}" 
                     onclick="window.location.href='{{ url_for('views.releases') }}'">Releases</button>
-            {% endif %}    -->
+            {% endif %}
         </div>
 
 
@@ -43,14 +43,15 @@
         <div class="download_container">
         <!-- Download Excel Button -->
         <button class="download-btn" onclick="window.location.href='{{ url_for('views.download_all_tables') }}'">Download Excel</button>
+        <i class="fa fa-info-circle info-icon" title="The downloaded Excel file contains all tab data in separate sheets."></i>
     </div>
 
     <!-- Table Section for Inventory -->
     {% if active_tab == 'Inventory' %}
-    <div class="data-table">
+    <div class="data-table1">
         {% if tabs_data['Inventory'] %}
-        <div class="table-wrapper">
-            <div class="table-scroll-container">
+        <div class="table-wrapper1">
+            <div class="table-scroll-container1">
                 <table class="inventory-table">
                     <thead>
                         <tr>
@@ -81,10 +82,10 @@
 
     <!-- Table Section for Transit -->
     {% if active_tab == 'Transit' %}
-    <div class="data-table">
+    <div class="data-table1">
         {% if tabs_data['Transit'] %}
-        <div class="table-wrapper">
-            <div class="table-scroll-container">
+        <div class="table-wrapper1">
+            <div class="table-scroll-container1">
                 <table class="transit-table">
                     <thead>
                         <tr>
@@ -113,10 +114,10 @@
 
     <!-- Table Section for OOR -->
     {% if active_tab == 'Open Order' %}
-    <div class="data-table">
+    <div class="data-table1">
         {% if tabs_data['Open Order'] %}
-        <div class="table-wrapper">
-            <div class="table-scroll-container">
+        <div class="table-wrapper1">
+            <div class="table-scroll-container1">
                 <table class="oor-table">
                     <thead>
                         <tr>
@@ -144,11 +145,11 @@
     {% endif %}
 
     {% if active_tab == 'Releases' %}
-    <div class="data-table">
+    <div class="data-table1">
         {% if tabs_data['Releases'] %}
-        <div class="table-wrapper">
-            <div class="table-scroll-container">
-                <table class="releases-table">
+        <div class="table-wrapper1">
+            <div class="table-scroll-container1">
+                <table class="releases-table1">
                     <thead>
                         <tr>
                             {% for header in tabs_data['Releases'].headers %}
@@ -171,9 +172,11 @@
                     </tbody>
                 </table>
             </div>
-            <button onclick="confirmRelease()" class="confirm-button">Confirm</button> <!-- Confirm Button -->
         </div>
-        
+
+        <div class="button-container">
+            <button onclick="confirmRelease()" class="confirm-button">Confirm</button>
+        </div>
         
         <!-- Popup Modal -->
         <div id="releaseModal" class="modal">
@@ -193,7 +196,7 @@
                         <!-- Selected rows will be added here via JavaScript -->
                     </tbody>
                 </table>
-                <button onclick="submitReleaseData()">Submit</button>
+                <button onclick="submitReleaseData()" class="submit-button">Submit</button>
             </div>
         </div>
         
