@@ -2,7 +2,7 @@ function getSelectedRows() {
     let selectedRows = [];
     let invalidInputs = false;  // Flag to check if any input is invalid
 
-    document.querySelectorAll(".releases-table tbody tr").forEach((row) => {
+    document.querySelectorAll(".releases-table1 tbody tr").forEach((row) => {
         let inputField = row.querySelector(".pallet-input");
         let inputValue = parseInt(inputField.value.trim());
 
