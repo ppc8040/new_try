@@ -93,7 +93,7 @@ def generate_excel_file(username):
         else:
             cust_code_filter = username[3:6]
         if username not in exclude_oor_users:
-            oor_data = fetch_data(oor_query, {'cust_code_filter': f'%{cust_code_filter}%'})
+            oor_data = fetch_data(str(oor_query), {'cust_code_filter': f'%{cust_code_filter}%'})
 
         # Convert date columns to the format 'dd-MMM-yy'
         for df, date_columns in [
