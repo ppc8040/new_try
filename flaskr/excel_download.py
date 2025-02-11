@@ -12,6 +12,8 @@ if uri.startswith("postgres://"):
 # Create SQLAlchemy Engine
 engine = create_engine(uri)
 
+hidden_tabs = {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'}
+
 # Function to fetch data for a specific user
 def fetch_data(query, params):
     with engine.connect() as connection:
@@ -59,7 +61,8 @@ def generate_excel_file(username):
             ORDER BY eta_arrival_to_va ASC
         """
 
-        oor_query = """
+        hide_stock_columns = username in hidden_tabs
+        oor_query = text(f"""
             SELECT 
                 actual_customer AS "Customer Code", 
                 customer_po_number AS "Customer PO#", 
@@ -70,15 +73,14 @@ def generate_excel_file(username):
                 ordered_quantity AS "Ordered Quantity", 
                 delivered_quantity AS "Delivered Quantity", 
                 open_quantity AS "Open Quantity", 
-                stock_in_virginia AS "Stock in Virginia", 
-                stock_in_transit AS "Stock in Transit", 
+                {'stock_in_virginia AS "Stock in Virginia", stock_in_transit AS "Stock in Transit",' if not hide_stock_columns else ''}
                 stock_at_indus AS "Stock at Indus- Dubai", 
                 to_be_manufactured AS "Manufacturing WIP"
             FROM customer_orders 
             WHERE actual_customer LIKE :cust_code_filter
-            ORDER BY date_of_receiving_po ASC, customer_required_delivery_date ASC         
-        """
-
+            ORDER BY date_of_receiving_po, customer_required_delivery_date ASC         
+        """)
+        
         # Fetch the data for the user
         inventory_data = fetch_data(inventory_query, {'cust_code': username})
         transit_data = fetch_data(transit_query, {'cust_code': username})
