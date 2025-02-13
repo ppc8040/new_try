@@ -28,7 +28,7 @@ def get_inventory_data():
                 days_121_180 AS "121-180 Days", 
                 days_181_240 AS "181-240 Days", 
                 days_gt_240 AS ">240 Days", 
-                warehouse_transit AS "Warehouse+Transit", 
+                warehouse_transit AS "Warehouse + Transit", 
                 pallet_size_cms AS "Pallet Size (cms)", 
                 pcs_per_pallet AS "Coils/Pallet"
             FROM inventory_db 
