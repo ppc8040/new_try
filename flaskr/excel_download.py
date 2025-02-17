@@ -12,7 +12,7 @@ if uri.startswith("postgres://"):
 # Create SQLAlchemy Engine
 engine = create_engine(uri)
 
-hidden_tabs = {'ALD','BDT','BON','COM','ETX','ETP','KAL','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE'}
+hidden_tabs = {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE','NIM','TCS'}
 
 # Function to fetch data for a specific user
 def fetch_data(query, params):
