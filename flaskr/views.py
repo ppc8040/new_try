@@ -125,7 +125,7 @@ def get_oor_data():
                 ordered_quantity AS "Ordered Quantity", 
                 delivered_quantity AS "Delivered Quantity", 
                 open_quantity AS "Open Quantity", 
-                """ + ("" if hide_stock_columns else "stock_in_virginia AS \"Stock in Virginia\", stock_in_transit AS \"Stock in Transit\", ") + """
+                """ + ("" if hide_stock_columns else "stock_in_virginia AS \"Stock in Warehouse\", stock_in_transit AS \"Stock in Transit\", ") + """
                 stock_at_indus AS "Stock at Indus- Dubai", 
                 to_be_manufactured AS "Manufacturing WIP"
             FROM customer_orders 
