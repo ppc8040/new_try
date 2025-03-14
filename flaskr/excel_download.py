@@ -12,8 +12,7 @@ if uri.startswith("postgres://"):
 # Create SQLAlchemy Engine
 engine = create_engine(uri)
 
-hidden_tabs = {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','ETE','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','WBT','JOL','LIE','QTM','SRG','RDE','NIM','TCS'}
-
+hidden_tabs = {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT'}
 # Function to fetch data for a specific user
 def fetch_data(query, params):
     with engine.connect() as connection:
@@ -38,9 +37,7 @@ def generate_excel_file(username):
                 days_121_180 AS "121-180 Days", 
                 days_181_240 AS "181-240 Days", 
                 days_gt_240 AS ">240 Days", 
-                warehouse_transit AS "Warehouse+Transit", 
-                pallet_size_cms AS "Pallet Size (cms)", 
-                pcs_per_pallet AS "Coils/Pallet"
+                warehouse_transit AS "Warehouse+Transit"
             FROM inventory_db 
             WHERE cust_code = :cust_code
             ORDER BY warehouse_stock DESC
