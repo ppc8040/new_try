@@ -195,9 +195,9 @@ def get_int_stock_data():
 def get_hidden_tabs(username):
     hidden_tabs = {
         "OOR": {'001CPT-AT', '001WFI', '001SCT', '001RDT'},
-        "Transit": {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP' },
-        "Inventory": {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP'},
-        "Release": {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP'}
+        "Transit": {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP' },
+        "Inventory": {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP'},
+        "Release": {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HEL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP'}
     }
 
     return {
