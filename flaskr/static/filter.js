@@ -15,7 +15,8 @@ function filterTable() {
         table = document.querySelector('.oor-table');
         columnIndices = [
             getColumnIndex(table, 'Customer Part'),
-            getColumnIndex(table, 'Customer PO#') // Include both columns
+            getColumnIndex(table, 'Customer PO#'),
+            getColumnIndex(table, 'Indus Part')
         ];
     } else if (activeTab.includes('Releases')) {
         table = document.querySelector('.releases-table1');
