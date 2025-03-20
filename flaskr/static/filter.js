@@ -7,10 +7,12 @@ function filterTable() {
 
     if (activeTab.includes('Inventory')) {
         table = document.querySelector('.inventory-table');
-        columnIndices = [getColumnIndex(table, 'Customer Part')];
+        columnIndices = [getColumnIndex(table, 'Customer Part'),
+                         getColumnIndex(table, 'Indus Part')];
     } else if (activeTab.includes('Transit')) {
         table = document.querySelector('.transit-table');
-        columnIndices = [getColumnIndex(table, 'Customer Part')];
+        columnIndices = [getColumnIndex(table, 'Customer Part'),
+                         getColumnIndex(table, 'Indus Part')];
     } else if (activeTab.includes('Open Order')) {
         table = document.querySelector('.oor-table');
         columnIndices = [
