@@ -83,7 +83,7 @@ def get_transit_data():
         df = df[new_order]
 
          # Convert date columns to datetime format and format to 'dd-MMM-yy'
-        data_column = ['ETA Arrival to VA']
+        data_column = ['ETA Arrival to Warehouse']
         for col in data_column:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors='coerce')
