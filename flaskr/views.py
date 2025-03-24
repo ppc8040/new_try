@@ -63,7 +63,7 @@ def get_transit_data():
                 num_of_pallet AS "Number of Pallets", 
                 total_qty AS "Total Coils", 
                 container_number AS "Container Number", 
-                eta_arrival_to_va AS "ETA Arrival to VA"
+                eta_arrival_to_va AS "ETA Arrival to Warehouse"
             FROM transit_db 
             WHERE customer_code = :cust_code
             ORDER BY eta_arrival_to_va ASC
