@@ -146,7 +146,7 @@ def process_data_int_stock(df):
     df = df.drop(columns=columns_to_drop, errors='ignore')
 
     # Convert necessary columns to numeric (in case some contain strings)
-    for col in ['Alt 1 Qty', 'Quantity', 'Qty Reserved', 'Grs Weight']:
+    for col in ['Alt 1 Qty', 'Quantity', 'Qty Reserved', 'Grs Weight','Pallet size']:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
     # Pivot table
