@@ -52,7 +52,7 @@ def generate_excel_file(username):
                 num_of_pallet AS "Number of Pallets", 
                 total_qty AS "Total Coils", 
                 container_number AS "Container Number", 
-                eta_arrival_to_va AS "ETA Arrival to VA"
+                eta_arrival_to_va AS "ETA Arrival to Warehouse"
             FROM transit_db 
             WHERE customer_code = :cust_code
             ORDER BY eta_arrival_to_va ASC
@@ -70,7 +70,7 @@ def generate_excel_file(username):
                 ordered_quantity AS "Ordered Quantity", 
                 delivered_quantity AS "Delivered Quantity", 
                 open_quantity AS "Open Quantity", 
-                {'stock_in_virginia AS "Stock in Virginia", stock_in_transit AS "Stock in Transit",' if not hide_stock_columns else ''}
+                {'stock_in_virginia AS "Stock in Warehouse", stock_in_transit AS "Stock in Transit",' if not hide_stock_columns else ''}
                 stock_at_indus AS "Stock at Indus- Dubai", 
                 to_be_manufactured AS "Manufacturing WIP"
             FROM customer_orders 
