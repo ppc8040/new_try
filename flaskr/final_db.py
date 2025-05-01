@@ -204,7 +204,7 @@ def run_data_update():
         insert_transit_data(transit_df)
 
         print("Fetching and processing OOR data...")
-        oor_df = process_oor_data(fetch_oor_data(sheet_name="Manufacturing Qty", header=0, usecols="A:W"))
+        oor_df = process_oor_data(fetch_oor_data(sheet_name="Manufacturing Qty", header=0, usecols="A:R"))
         insert_oor_data(oor_df)
 
         print("Fetching and processing INT_Stock data...")
