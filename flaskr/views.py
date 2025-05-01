@@ -129,7 +129,7 @@ def get_oor_data():
                 to_be_manufactured AS "Manufacturing WIP"
             FROM customer_orders 
             WHERE actual_customer LIKE :cust_code_filter
-            ORDER BY date_of_receiving_po, customer_required_delivery_date ASC         
+            ORDER BY date_of_receiving_po, customer_required_delivery_date, customer_po_number ASC         
         """)
         
         # Execute the query and fetch the result into a Pandas DataFrame
