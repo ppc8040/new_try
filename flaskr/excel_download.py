@@ -94,7 +94,7 @@ def generate_excel_file(username):
 
         # Convert date columns to the format 'dd-MMM-yy'
         for df, date_columns in [
-            (transit_data, ['ETA Arrival to VA']),
+            (transit_data, ['ETA Arrival to Warehouse']),
             (oor_data, ['Date of Receiving PO#', 'Required Delivery Date']) if oor_data is not None else (None, [])
         ]:
             if df is not None:
