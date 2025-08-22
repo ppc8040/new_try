@@ -83,7 +83,7 @@ def generate_excel_file(username):
         transit_data = fetch_data(transit_query, {'cust_code': username})
         
         # Conditionally fetch OOR data based on username
-        exclude_oor_users = ['001CPT-AT', '001WFI', '001SCT', '001RDT']
+        exclude_oor_users = ['001CPT-AT', '001WFI', '001SCT']
         oor_data = None
         if len(username) == 3:
             cust_code_filter = username
