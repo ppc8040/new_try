@@ -5,11 +5,11 @@ from psycopg2.extras import execute_values
 import schedule
 import time
 from datetime import datetime
-from flaskr.msal_auth import fetch_excel_data,fetch_oor_data
-from flaskr.process_excel import process_data_inventory, process_data_transit,process_oor_data, process_data_int_stock
+from msal_auth import fetch_excel_data,fetch_oor_data
+from process_excel import process_data_inventory, process_data_transit,process_oor_data, process_data_int_stock
 
 # Database connection parameters
-uri = uri = os.environ.get("HEROKU_POSTGRESQL_GREEN_URL")
+uri = uri = "postgres://u5uvdmh4eki2lk:pd24f3a532c9386e873acf172a2f5a60a5a3176daa7b2f850c8c674e14bd83c6d@c9mq4861d16jlm.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d1bglbigug1dqt"
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 
@@ -120,13 +120,23 @@ def insert_oor_data(df):
     try:
         conn = psycopg2.connect(uri)
         cursor = conn.cursor()
-
         # Lock and delete data in the customer_orders table
         if not lock_and_delete_table(cursor, "customer_orders"):
             print("Failed to empty customer_orders. Aborting operation.")
             return
 
-        # Insert processed OOR data
+        # ----------- FIX: Coerce integer columns to real numbers and fill bad values with 0 -----------
+        int_columns = [
+            'ordered_quantity', 'delivered_quantity', 'open_quantity',
+            'stock_in_virginia', 'stock_in_transit', 'stock_at_indus',
+            'to_be_manufactured'
+        ] # add or remove columns as needed to match your table definition
+        for col in int_columns:
+            if col in df.columns:
+                # Convert to numeric, make errors NaN, then fill with zero
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+        # ----------- END FIX -----------
+
         insert_query = """
             INSERT INTO customer_orders (
                 customer_code, customer_po_number, date_of_receiving_po,
@@ -140,17 +150,16 @@ def insert_oor_data(df):
         data_tuples = [
             (
                 row['customer_code'], row['customer_po_number'], handle_missing_dates(row['date_of_receiving_po']),
-                handle_missing_dates(row['customer_required_delivery_date']), row['sales_document'], 
-                row['sales_document_item'], row['customer_material'], row['indus_product'], 
-                row['ordered_quantity'], row['delivered_quantity'], row['open_quantity'], 
-                row['stock_in_virginia'], row['stock_in_transit'], row['stock_at_indus'], 
-                row['to_be_manufactured'], handle_missing_dates(row['indus_ship_date']), 
-                row['actual_customer'], handle_missing_dates(row['actual_ship_date']), 
+                handle_missing_dates(row['customer_required_delivery_date']), row['sales_document'],
+                row['sales_document_item'], row['customer_material'], row['indus_product'],
+                row['ordered_quantity'], row['delivered_quantity'], row['open_quantity'],
+                row['stock_in_virginia'], row['stock_in_transit'], row['stock_at_indus'],
+                row['to_be_manufactured'], handle_missing_dates(row['indus_ship_date']),
+                row['actual_customer'], handle_missing_dates(row['actual_ship_date']),
                 row['eta_virginia'], datetime.now()
             ) for _, row in df.iterrows()
         ]
         execute_values(cursor, insert_query, data_tuples)
-
         conn.commit()
         print("Customer orders data inserted successfully.")
     except Exception as e:
@@ -194,6 +203,7 @@ def insert_int_stock_data(df):
 
 # Main function to process and insert data
 def run_data_update():
+
     try:
         print("Fetching and processing Inventory data...")
         inventory_df = process_data_inventory(fetch_excel_data(sheet_name="Cus Inventory", header=1, usecols="B:S"))
@@ -213,3 +223,4 @@ def run_data_update():
 
     except Exception as e:
         print(f"Error in data update: {e}")
+        
