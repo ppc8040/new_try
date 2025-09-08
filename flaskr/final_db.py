@@ -99,7 +99,7 @@ def insert_transit_data(df):
             """, (
                 row['Indus Part'], row['Customer Part No.'], row['Customer Code'], 
                 row['Pallet/Qty'], row['No. of Pallet '], row['Total Qty'], row['Container Number'], 
-                row['In Transit'], row['ETA Arrival to VA'], datetime.now()
+                row['In Transit'], row['ETA Arrival to Warehouse'], datetime.now()
             ))
 
         conn.commit()
