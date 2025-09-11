@@ -83,7 +83,7 @@ def get_transit_data():
         df = df[new_order]
 
          # Convert date columns to datetime format and format to 'dd-MMM-yy'
-        data_column = ['ETA Arrival to Warehouse']
+        data_column = ['ETA to Warehouse']
         for col in data_column:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors='coerce')
@@ -349,6 +349,7 @@ def submit_releases():
 
     except Exception as email_error:
         return jsonify({"error": f"An error occurred while sending the email: {str(email_error)}"}), 500
+
 
 
 
