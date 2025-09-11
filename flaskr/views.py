@@ -63,7 +63,7 @@ def get_transit_data():
                 num_of_pallet AS "Number of Pallets", 
                 total_qty AS "Total Coils", 
                 container_number AS "Container Number", 
-                eta_arrival_to_va AS "ETA Arrival to Warehouse"
+                eta_arrival_to_va AS "ETA to Warehouse"
             FROM transit_db 
             WHERE customer_code = :cust_code
             ORDER BY eta_arrival_to_va ASC
@@ -349,6 +349,7 @@ def submit_releases():
 
     except Exception as email_error:
         return jsonify({"error": f"An error occurred while sending the email: {str(email_error)}"}), 500
+
 
 
 
