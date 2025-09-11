@@ -52,7 +52,7 @@ def generate_excel_file(username):
                 num_of_pallet AS "Number of Pallets", 
                 total_qty AS "Total Coils", 
                 container_number AS "Container Number", 
-                eta_arrival_to_va AS "ETA Arrival to Warehouse"
+                eta_arrival_to_va AS "ETA to Warehouse"
             FROM transit_db 
             WHERE customer_code = :cust_code
             ORDER BY eta_arrival_to_va ASC
