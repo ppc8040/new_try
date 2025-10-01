@@ -195,9 +195,9 @@ def get_int_stock_data():
 def get_hidden_tabs(username):
     hidden_tabs = {
         "OOR": {'001CPT-AT', '001WFI', '001SCT'},
-        "Transit": {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP' },
-        "Inventory": {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP'},
-        "Release": {'ALD','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP'}
+        "Transit": {'ALD', '001STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP' },
+        "Inventory": {'ALD','001STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP'},
+        "Release": {'ALD','001STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP'}
     }
 
     return {
@@ -349,6 +349,7 @@ def submit_releases():
 
     except Exception as email_error:
         return jsonify({"error": f"An error occurred while sending the email: {str(email_error)}"}), 500
+
 
 
 
