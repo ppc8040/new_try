@@ -330,7 +330,7 @@ def submit_releases():
         table_html += "<tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>"
     table_html += "</table>"
 
-    recipient_email = ["ppc@indusair.ae","shabbir.kachwala@indusair.ae","logisticsdbx2@indusair.ae", "logisticsdbx@indusair.ae", "logisticsdbx1@indusair.ae","santhosh.sivakumar@indusair.ae", "siddharth.porwal@indusair.ae"]
+    recipient_email = ["omkar.pampattiwar@indusair.ae","shabbir.kachwala@indusair.ae","logisticsdbx3@indusair.ae","logisticsdbx2@indusair.ae","logisticsdbx@indusair.ae","logisticsdbx1@indusair.ae","siddharth.porwal@indusair.ae"]
     subject = f"{username}_New Release Request"
     body = f"""
         <p>A new release request has been submitted. Below are the details:</p>
@@ -349,6 +349,7 @@ def submit_releases():
 
     except Exception as email_error:
         return jsonify({"error": f"An error occurred while sending the email: {str(email_error)}"}), 500
+
 
 
 
