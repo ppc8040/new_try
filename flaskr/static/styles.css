@@ -174,7 +174,7 @@ header h1 {
   justify-content: center;
   align-items: center;
   min-height: 80vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #e8f4f8 0%, #f0f8f0 100%);
   padding: 20px;
 }
 
@@ -203,7 +203,7 @@ header h1 {
 .login-box h2 {
   font-size: 26px;
   margin-bottom: 30px;
-  color: #1e3c72;
+  color: #0066cc;
   font-weight: 600;
 }
 
@@ -223,14 +223,14 @@ header h1 {
 
 .input-group input:focus {
   outline: none;
-  border-color: #2a5298;
-  box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
 }
 
 .button-group input[type="submit"] {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  background: linear-gradient(135deg, #00a651 0%, #008f47 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -238,12 +238,12 @@ header h1 {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 6px 16px rgba(30, 60, 114, 0.3);
+  box-shadow: 0 6px 16px rgba(0, 166, 81, 0.3);
 }
 
 .button-group input[type="submit"]:hover {
-  background: linear-gradient(135deg, #2a5298 0%, #3564b8 100%);
-  box-shadow: 0 8px 20px rgba(30, 60, 114, 0.4);
+  background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+  box-shadow: 0 8px 20px rgba(0, 166, 81, 0.4);
   transform: translateY(-2px);
 }
 
