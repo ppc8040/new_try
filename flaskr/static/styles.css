@@ -92,19 +92,19 @@ header h1 {
 
 /* Tabs, Search Bar, and Active Tab Section */
 .tabs-search-container {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 15px;
+  gap: 20px;
   padding: 15px 0;
+  margin-bottom: 10px;
 }
 
 .tab-buttons {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .tab-btn {
@@ -117,6 +117,9 @@ header h1 {
   cursor: pointer;
   transition: all 0.3s ease;
   color: #34495e;
+  white-space: nowrap;
+  min-width: 120px;
+  text-align: center;
 }
 
 .tab-btn:hover {
@@ -145,6 +148,7 @@ header h1 {
   border-radius: 8px;
   border: 2px solid #cbd5e0;
   width: 280px;
+  min-width: 250px;
   box-sizing: border-box;
   transition: all 0.3s ease;
   background-color: #ffffff;
@@ -160,9 +164,10 @@ header h1 {
 .active-tab-name {
   font-size: 26px;
   color: #1e3c72;
-  margin-left: 0;
+  margin: 0;
   font-weight: 600;
   letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 /* ===========================
