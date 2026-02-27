@@ -313,9 +313,15 @@ header h1 {
   font-size: 14px;
 }
 
-.inventory-table tr:hover {
+/* Hover effect on rows - Fixed for sticky headers */
+.inventory-table tbody tr:hover {
   background-color: #f8fafc;
   transition: background-color 0.2s ease;
+}
+
+/* Ensure sticky headers are not affected by row hover */
+.inventory-table thead tr:hover {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
 }
 
 .inventory-table tr:nth-child(even) {
