@@ -367,9 +367,14 @@ header h1 {
   font-size: 14px;
 }
 
-.transit-table tr:hover {
+/* NEW */
+.transit-table tbody tr:hover {
   background-color: #f8fafc;
   transition: background-color 0.2s ease;
+}
+
+.transit-table thead tr:hover {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
 }
 
 .transit-table tr:nth-child(even) {
@@ -415,9 +420,14 @@ header h1 {
   font-size: 14px;
 }
 
-.oor-table tr:hover {
+/* NEW */
+.oor-table tbody tr:hover {
   background-color: #f8fafc;
   transition: background-color 0.2s ease;
+}
+
+.oor-table thead tr:hover {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
 }
 
 .oor-table tr:nth-child(even) {
@@ -522,6 +532,11 @@ header h1 {
 
 .releases-table1 tbody tr:hover {
   background-color: #f8fafc;
+}
+
+/* ADD this new rule */
+.releases-table1 thead tr:hover {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
 }
 
 .pallet-input {
