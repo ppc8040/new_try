@@ -176,20 +176,38 @@ def get_int_stock_data():
 
 def get_hidden_tabs(username):
     hidden_tabs = {
-        "OOR":       {'CPT', 'WFI', 'SCT'},
-        "Transit":   {'ALD','STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP'},
-        "Inventory": {'ALD','STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP'},
-        "Release":   {'ALD','STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP'}
+        "OOR": {
+            '001CPT-AT', '001WFI', '001SCT'
+        },
+        "Transit": {
+            '001ALD', '001STG', '001BDT', '001BON', '001COM', '001ETX', '001ETP',
+            '001EBS', '001EMB', '001HCL', '001HGD', '001MIE', '001NBE', '001SML',
+            '001SPM', '001SDC', '001SRO', '001STL', '001WOF', '001LOK', '001JOL',
+            '001LIE', '001QTM', '001SRG', '001NIM', '001TCS', '001LER', '001SPS',
+            '001NMT', '001ACP'
+        },
+        "Inventory": {
+            '001ALD', '001STG', '001BDT', '001BON', '001COM', '001ETX', '001ETP',
+            '001EBS', '001EMB', '001HCL', '001HGD', '001MIE', '001NBE', '001SML',
+            '001SPM', '001SDC', '001SRO', '001STL', '001WOF', '001LOK', '001JOL',
+            '001LIE', '001QTM', '001SRG', '001NIM', '001TCS', '001LER', '001SPS',
+            '001NMT', '001ACP'
+        },
+        "Release": {
+            '001ALD', '001STG', '001BDT', '001BON', '001COM', '001ETX', '001ETP',
+            '001EBS', '001EMB', '001HCL', '001HGD', '001MIE', '001NBE', '001SML',
+            '001SPM', '001SDC', '001SRO', '001STL', '001WOF', '001LOK', '001JOL',
+            '001LIE', '001QTM', '001SRG', '001NIM', '001TCS', '001LER', '001SPS',
+            '001NMT', '001ACP'
+        }
     }
-
-    customer_code = get_display_code()
-
     return {
-        "hide_oor_button":       customer_code in hidden_tabs["OOR"],
-        "hide_transit_button":   customer_code in hidden_tabs["Transit"],
-        "hide_inventory_button": customer_code in hidden_tabs["Inventory"],
-        "hide_release_button":   customer_code in hidden_tabs["Release"]
+        "hide_oor_button":       username in hidden_tabs["OOR"],
+        "hide_transit_button":   username in hidden_tabs["Transit"],
+        "hide_inventory_button": username in hidden_tabs["Inventory"],
+        "hide_release_button":   username in hidden_tabs["Release"]
     }
+
 
 
 # Route for the Dashboard (default view shows Inventory)
