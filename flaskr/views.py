@@ -98,7 +98,7 @@ def get_transit_data():
 
 def get_oor_data():
     try:
-        cust_code_filter = get_cust_code()
+        cust_code_filter = current_user.username
         if not cust_code_filter or not cust_code_filter.strip():
             return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
 
@@ -182,7 +182,7 @@ def get_hidden_tabs(username):
         "Release":   {'ALD','STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP'}
     }
 
-    customer_code = get_cust_code()
+    customer_code = get_display_code()
 
     return {
         "hide_oor_button":       customer_code in hidden_tabs["OOR"],
