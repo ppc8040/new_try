@@ -98,11 +98,11 @@ def get_transit_data():
 
 def get_oor_data():
     try:
-        cust_code_filter = current_user.username
+        cust_code_filter = current_user.customer_code if current_user.customer_code else current_user.username
         if not cust_code_filter or not cust_code_filter.strip():
             return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
 
-        hidden_tabs_status = get_hidden_tabs(current_user.customer_code)
+        hidden_tabs_status = get_hidden_tabs(current_user.username)
         hide_stock_columns = hidden_tabs_status["hide_transit_button"]
 
         query = text("""
