@@ -8,8 +8,8 @@ db = SQLAlchemy()
 # User model
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(10), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
     customer_code = db.Column(db.String(20), nullable=True)
 
     def set_password(self, password):
