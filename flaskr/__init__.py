@@ -69,6 +69,14 @@ def create_app():
         except Exception as e:
             return f"Error: {str(e)}"
 
+    @app.route('/run-data-update')
+    def run_data_update_now():
+        try:
+            run_data_update()
+            return "Done - all 4 tabs data updated successfully (Inventory, Transit, OOR, Releases)."
+        except Exception as e:
+            return f"Error: {str(e)}"
+
     app.register_blueprint(home_bp)
     app.register_blueprint(views, url_prefix='/views')
 
