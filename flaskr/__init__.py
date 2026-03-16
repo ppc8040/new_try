@@ -1,13 +1,13 @@
 import os
+import time
+import threading
 from flask import Flask, request, session, redirect, render_template, url_for
 from flask_login import LoginManager, login_user, logout_user
 from flaskr.models import db, User, Inventory
-from flaskr.final_db import run_data_update
-import time
-import threading
+from flaskr.final_db import run_data_update, sync_users_from_excel
 from flaskr.home import home_bp
 from flaskr.views import views
-from flaskr.final_db import run_data_update, sync_users_from_excel
+
 
 def create_app():
     app = Flask(__name__)
