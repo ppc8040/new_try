@@ -61,6 +61,14 @@ def create_app():
         except Exception as e:
             return f"Error: {str(e)}"
 
+    @app.route('/sync-users-now')
+    def sync_users_now():
+        try:
+            sync_users_from_excel()
+            return "Done - all users synced with customer_code from login.xlsx."
+        except Exception as e:
+            return f"Error: {str(e)}"
+
     app.register_blueprint(home_bp)
     app.register_blueprint(views, url_prefix='/views')
 
