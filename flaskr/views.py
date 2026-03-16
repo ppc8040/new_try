@@ -10,12 +10,6 @@ from flaskr.mail_config import send_email_graph_api
 
 views = Blueprint('views', __name__)
 
-def get_cust_code():
-    return current_user.username
-
-def get_display_code():
-    return current_user.customer_code if current_user.customer_code else current_user.username
-
 # Function to get Inventory Data
 def get_inventory_data():
     try:
@@ -39,8 +33,10 @@ def get_inventory_data():
             WHERE cust_code = :cust_code
             ORDER BY warehouse_stock DESC
         """)
-        result = db.session.execute(query, {'cust_code': get_cust_code()})
+        # Execute the query and fetch the result into a Pandas DataFrame
+        result = db.session.execute(query, {'cust_code': current_user.username})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
+        
 
         if not df.empty:
             table_headers = df.columns.tolist()
@@ -57,6 +53,7 @@ def get_inventory_data():
 # Function to get Transit Data
 def get_transit_data():
     try:
+        # Execute the query to get data from transit_db table
         query = text(""" 
             SELECT 
                 indus_part AS "Indus Part", 
@@ -71,23 +68,29 @@ def get_transit_data():
             WHERE customer_code = :cust_code
             ORDER BY eta_arrival_to_va ASC
         """)
-        result = db.session.execute(query, {'cust_code': get_cust_code()})
+        
+        # Execute the query and fetch the result into a Pandas DataFrame
+        result = db.session.execute(query, {'cust_code': current_user.username})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
 
+        # If the dataframe is empty, return an error
         if df.empty:
             return {'headers': ["Currently no stock in transit to the warehouse"], 'rows': [[""]]}
 
+        # Reorder columns if required (same logic as in your existing code)
         column_to_move = 'Customer Code'
         new_order = [column_to_move] + [col for col in df.columns if col != column_to_move]
         df = df[new_order]
 
+         # Convert date columns to datetime format and format to 'dd-MMM-yy'
         data_column = ['ETA to Warehouse']
         for col in data_column:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors='coerce')
                 df = df.sort_values(by=col, ascending=True)
-                df[col] = df[col].dt.strftime('%d-%b-%y').fillna('')
+                df[col] = df[col].dt.strftime('%d-%b-%y').fillna('')    
 
+        # Prepare table headers and rows for the response
         table_headers = df.columns.tolist()
         table_rows = df.values.tolist()
 
@@ -98,16 +101,15 @@ def get_transit_data():
 
 def get_oor_data():
     try:
-        username = current_user.username
-        if current_user.customer_code:
-            cust_code_filter = current_user.customer_code
-        elif len(username) > 3 and username.startswith('001'):
-            cust_code_filter = username[3:6]
+        # Extract the customer code from the current user's username (cust_code_filter)
+        if len(current_user.username) == 3:
+            cust_code_filter = current_user.username
         else:
-            cust_code_filter = username
-        if not cust_code_filter or not cust_code_filter.strip():
+            cust_code_filter = current_user.username[3:6]
+        if not cust_code_filter.strip():  # .strip() handles whitespace too
             return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
 
+        # Check if the user is in the hidden_tab for OOR
         hidden_tabs_status = get_hidden_tabs(current_user.username)
         hide_stock_columns = hidden_tabs_status["hide_transit_button"]
 
@@ -129,18 +131,26 @@ def get_oor_data():
             WHERE actual_customer LIKE :cust_code_filter
             ORDER BY date_of_receiving_po, customer_required_delivery_date, customer_po_number ASC         
         """)
+        
+        # Execute the query and fetch the result into a Pandas DataFrame
         result = db.session.execute(query, {'cust_code_filter': f'%{cust_code_filter}%'})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
 
+        # If the dataframe is empty, return an error message
         if df.empty:
             return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
 
+        # Convert date columns to datetime format and format to 'dd-MMM-yy'
         date_columns = ['Date of Receiving PO#', 'Required Delivery Date', 'Indus Ship Date', 'Actual Ship Date', 'ETA Virginia']
         for col in date_columns:
             if col in df.columns:
+                # Convert to datetime, where missing values will be handled correctly
                 df[col] = pd.to_datetime(df[col], errors='coerce')
+
+                # Format the date column to 'dd-MMM-yy' and replace NaT with blanks
                 df[col] = df[col].dt.strftime('%d-%b-%y').fillna('')
 
+        # Prepare table headers and rows for the response
         table_headers = df.columns.tolist()
         table_rows = df.values.tolist()
 
@@ -163,7 +173,9 @@ def get_int_stock_data():
             WHERE customer_code = :customer_code
             ORDER BY alt_1_qty DESC
         """)
-        result = db.session.execute(query, {'customer_code': get_cust_code()})
+
+        # Execute the query and fetch the result into a Pandas DataFrame
+        result = db.session.execute(query, {'customer_code': current_user.username})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
 
         if not df.empty:
@@ -182,36 +194,17 @@ def get_int_stock_data():
 
 def get_hidden_tabs(username):
     hidden_tabs = {
-        "OOR": {
-            '001CPT-AT', '001WFI', '001SCT'
-        },
-        "Transit": {
-            '001ALD', '001STG', '001BDT', '001BON', '001COM', '001ETX', '001ETP',
-            '001EBS', '001EMB', '001HCL', '001HGD', '001MIE', '001NBE', '001SML',
-            '001SPM', '001SDC', '001SRO', '001STL', '001WOF', '001LOK', '001JOL',
-            '001LIE', '001QTM', '001SRG', '001NIM', '001TCS', '001LER', '001SPS',
-            '001NMT', '001ACP'
-        },
-        "Inventory": {
-            '001ALD', '001STG', '001BDT', '001BON', '001COM', '001ETX', '001ETP',
-            '001EBS', '001EMB', '001HCL', '001HGD', '001MIE', '001NBE', '001SML',
-            '001SPM', '001SDC', '001SRO', '001STL', '001WOF', '001LOK', '001JOL',
-            '001LIE', '001QTM', '001SRG', '001NIM', '001TCS', '001LER', '001SPS',
-            '001NMT', '001ACP'
-        },
-        "Release": {
-            '001ALD', '001STG', '001BDT', '001BON', '001COM', '001ETX', '001ETP',
-            '001EBS', '001EMB', '001HCL', '001HGD', '001MIE', '001NBE', '001SML',
-            '001SPM', '001SDC', '001SRO', '001STL', '001WOF', '001LOK', '001JOL',
-            '001LIE', '001QTM', '001SRG', '001NIM', '001TCS', '001LER', '001SPS',
-            '001NMT', '001ACP'
-        }
+        "OOR": {'001CPT-AT', '001WFI', '001SCT'},
+        "Transit": {'ALD', '001STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP' },
+        "Inventory": {'ALD','001STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP'},
+        "Release": {'ALD','001STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP'}
     }
+
     return {
-        "hide_oor_button":       username in hidden_tabs["OOR"],
-        "hide_transit_button":   username in hidden_tabs["Transit"],
+        "hide_oor_button": username in hidden_tabs["OOR"],
+        "hide_transit_button": username in hidden_tabs["Transit"],
         "hide_inventory_button": username in hidden_tabs["Inventory"],
-        "hide_release_button":   username in hidden_tabs["Release"]
+        "hide_release_button": username in hidden_tabs["Release"]
     }
 
 
@@ -356,7 +349,6 @@ def submit_releases():
 
     except Exception as email_error:
         return jsonify({"error": f"An error occurred while sending the email: {str(email_error)}"}), 500
-
 
 
 
