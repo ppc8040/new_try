@@ -33,10 +33,8 @@ def get_inventory_data():
             WHERE cust_code = :cust_code
             ORDER BY warehouse_stock DESC
         """)
-        # Execute the query and fetch the result into a Pandas DataFrame
-        result = db.session.execute(query, {'cust_code': current_user.username})
+        result = db.session.execute(query, {'cust_code': current_user.customer_code})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
-        
 
         if not df.empty:
             table_headers = df.columns.tolist()
@@ -53,7 +51,6 @@ def get_inventory_data():
 # Function to get Transit Data
 def get_transit_data():
     try:
-        # Execute the query to get data from transit_db table
         query = text(""" 
             SELECT 
                 indus_part AS "Indus Part", 
@@ -68,29 +65,23 @@ def get_transit_data():
             WHERE customer_code = :cust_code
             ORDER BY eta_arrival_to_va ASC
         """)
-        
-        # Execute the query and fetch the result into a Pandas DataFrame
-        result = db.session.execute(query, {'cust_code': current_user.username})
+        result = db.session.execute(query, {'cust_code': current_user.customer_code})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
 
-        # If the dataframe is empty, return an error
         if df.empty:
             return {'headers': ["Currently no stock in transit to the warehouse"], 'rows': [[""]]}
 
-        # Reorder columns if required (same logic as in your existing code)
         column_to_move = 'Customer Code'
         new_order = [column_to_move] + [col for col in df.columns if col != column_to_move]
         df = df[new_order]
 
-         # Convert date columns to datetime format and format to 'dd-MMM-yy'
         data_column = ['ETA to Warehouse']
         for col in data_column:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors='coerce')
                 df = df.sort_values(by=col, ascending=True)
-                df[col] = df[col].dt.strftime('%d-%b-%y').fillna('')    
+                df[col] = df[col].dt.strftime('%d-%b-%y').fillna('')
 
-        # Prepare table headers and rows for the response
         table_headers = df.columns.tolist()
         table_rows = df.values.tolist()
 
@@ -101,16 +92,11 @@ def get_transit_data():
 
 def get_oor_data():
     try:
-        # Extract the customer code from the current user's username (cust_code_filter)
-        if len(current_user.username) == 3:
-            cust_code_filter = current_user.username
-        else:
-            cust_code_filter = current_user.username[3:6]
-        if not cust_code_filter.strip():  # .strip() handles whitespace too
+        cust_code_filter = current_user.customer_code
+        if not cust_code_filter or not cust_code_filter.strip():
             return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
 
-        # Check if the user is in the hidden_tab for OOR
-        hidden_tabs_status = get_hidden_tabs(current_user.username)
+        hidden_tabs_status = get_hidden_tabs(current_user.customer_code)
         hide_stock_columns = hidden_tabs_status["hide_transit_button"]
 
         query = text("""
@@ -131,26 +117,18 @@ def get_oor_data():
             WHERE actual_customer LIKE :cust_code_filter
             ORDER BY date_of_receiving_po, customer_required_delivery_date, customer_po_number ASC         
         """)
-        
-        # Execute the query and fetch the result into a Pandas DataFrame
         result = db.session.execute(query, {'cust_code_filter': f'%{cust_code_filter}%'})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
 
-        # If the dataframe is empty, return an error message
         if df.empty:
             return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
 
-        # Convert date columns to datetime format and format to 'dd-MMM-yy'
         date_columns = ['Date of Receiving PO#', 'Required Delivery Date', 'Indus Ship Date', 'Actual Ship Date', 'ETA Virginia']
         for col in date_columns:
             if col in df.columns:
-                # Convert to datetime, where missing values will be handled correctly
                 df[col] = pd.to_datetime(df[col], errors='coerce')
-
-                # Format the date column to 'dd-MMM-yy' and replace NaT with blanks
                 df[col] = df[col].dt.strftime('%d-%b-%y').fillna('')
 
-        # Prepare table headers and rows for the response
         table_headers = df.columns.tolist()
         table_rows = df.values.tolist()
 
@@ -173,9 +151,7 @@ def get_int_stock_data():
             WHERE customer_code = :customer_code
             ORDER BY alt_1_qty DESC
         """)
-
-        # Execute the query and fetch the result into a Pandas DataFrame
-        result = db.session.execute(query, {'customer_code': current_user.username})
+        result = db.session.execute(query, {'customer_code': current_user.customer_code})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
 
         if not df.empty:
@@ -193,18 +169,21 @@ def get_int_stock_data():
 
 
 def get_hidden_tabs(username):
+    # All sets now use short customer codes only
     hidden_tabs = {
-        "OOR": {'001CPT-AT', '001WFI', '001SCT'},
-        "Transit": {'ALD', '001STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP' },
-        "Inventory": {'ALD','001STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP'},
-        "Release": {'ALD','001STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','001ACP'}
+        "OOR":       {'CPT', 'WFI', 'SCT'},
+        "Transit":   {'ALD','STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP'},
+        "Inventory": {'ALD','STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP'},
+        "Release":   {'ALD','STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP'}
     }
 
+    customer_code = current_user.customer_code or username
+
     return {
-        "hide_oor_button": username in hidden_tabs["OOR"],
-        "hide_transit_button": username in hidden_tabs["Transit"],
-        "hide_inventory_button": username in hidden_tabs["Inventory"],
-        "hide_release_button": username in hidden_tabs["Release"]
+        "hide_oor_button":       customer_code in hidden_tabs["OOR"],
+        "hide_transit_button":   customer_code in hidden_tabs["Transit"],
+        "hide_inventory_button": customer_code in hidden_tabs["Inventory"],
+        "hide_release_button":   customer_code in hidden_tabs["Release"]
     }
 
 
