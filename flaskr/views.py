@@ -10,6 +10,10 @@ from flaskr.mail_config import send_email_graph_api
 
 views = Blueprint('views', __name__)
 
+def get_cust_code():
+    """Returns customer_code if set, otherwise falls back to username."""
+    return current_user.customer_code if current_user.customer_code else current_user.username
+
 # Function to get Inventory Data
 def get_inventory_data():
     try:
@@ -33,7 +37,7 @@ def get_inventory_data():
             WHERE cust_code = :cust_code
             ORDER BY warehouse_stock DESC
         """)
-        result = db.session.execute(query, {'cust_code': current_user.customer_code})
+        result = db.session.execute(query, {'cust_code': get_cust_code()})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
 
         if not df.empty:
@@ -65,7 +69,7 @@ def get_transit_data():
             WHERE customer_code = :cust_code
             ORDER BY eta_arrival_to_va ASC
         """)
-        result = db.session.execute(query, {'cust_code': current_user.customer_code})
+        result = db.session.execute(query, {'cust_code': get_cust_code()})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
 
         if df.empty:
@@ -92,7 +96,7 @@ def get_transit_data():
 
 def get_oor_data():
     try:
-        cust_code_filter = current_user.customer_code
+        cust_code_filter = get_cust_code()
         if not cust_code_filter or not cust_code_filter.strip():
             return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
 
@@ -151,7 +155,7 @@ def get_int_stock_data():
             WHERE customer_code = :customer_code
             ORDER BY alt_1_qty DESC
         """)
-        result = db.session.execute(query, {'customer_code': current_user.customer_code})
+        result = db.session.execute(query, {'customer_code': get_cust_code()})
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
 
         if not df.empty:
@@ -169,7 +173,6 @@ def get_int_stock_data():
 
 
 def get_hidden_tabs(username):
-    # All sets now use short customer codes only
     hidden_tabs = {
         "OOR":       {'CPT', 'WFI', 'SCT'},
         "Transit":   {'ALD','STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP'},
@@ -177,7 +180,7 @@ def get_hidden_tabs(username):
         "Release":   {'ALD','STG','BDT','BON','COM','ETX','ETP','EBS','EMB','HCL','HGD','MIE','NBE','SML','SPM','SDC','SRO','STL','WOF','LOK','JOL','LIE','QTM','SRG','NIM','TCS','LER','SPS','NMT','ACP'}
     }
 
-    customer_code = current_user.customer_code or username
+    customer_code = get_cust_code()
 
     return {
         "hide_oor_button":       customer_code in hidden_tabs["OOR"],
@@ -185,7 +188,6 @@ def get_hidden_tabs(username):
         "hide_inventory_button": customer_code in hidden_tabs["Inventory"],
         "hide_release_button":   customer_code in hidden_tabs["Release"]
     }
-
 
 
 # Route for the Dashboard (default view shows Inventory)
