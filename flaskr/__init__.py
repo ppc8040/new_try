@@ -45,6 +45,16 @@ def create_app():
         else:
             return render_template('index.html', error='Invalid username or password.')
 
+        @app.route('/add-customer-code-col')
+        def add_customer_code_col():
+            try:
+                with db.engine.connect() as conn:
+                    conn.execute(db.text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS customer_code VARCHAR(20);'))
+                    conn.commit()
+                return "Done - customer_code column added to user table."
+            except Exception as e:
+                return f"Error: {str(e)}"
+
     @app.route('/logout')
     def logout():
         logout_user()
