@@ -201,6 +201,45 @@ def insert_int_stock_data(df):
     except Exception as e:
         print(f"Error inserting int_stock data: {e}")
 
+def sync_users_from_excel():
+    """
+    Reads login.xlsx from SharePoint (Sheet1, columns A=username, B=password, C=customer_code)
+    and creates or updates users in the database.
+    """
+    try:
+        from flaskr.models import db, User
+        from flask import current_app
+
+        print("Syncing users from login.xlsx...")
+        df = fetch_excel_data(sheet_name="Sheet1", header=0, usecols="A:C")
+        df.columns = ['username', 'password', 'customer_code']
+        df = df.dropna(subset=['username', 'password'])
+        df['username'] = df['username'].astype(str).str.strip()
+        df['password'] = df['password'].astype(str).str.strip()
+        df['customer_code'] = df['customer_code'].astype(str).str.strip()
+
+        with current_app.app_context():
+            for _, row in df.iterrows():
+                username = row['username']
+                password = row['password']
+                customer_code = row['customer_code']
+
+                existing_user = User.query.filter_by(username=username).first()
+                if existing_user:
+                    # Update password and customer_code in case they changed
+                    existing_user.set_password(password)
+                    existing_user.customer_code = customer_code
+                else:
+                    new_user = User(username=username, customer_code=customer_code)
+                    new_user.set_password(password)
+                    db.session.add(new_user)
+
+            db.session.commit()
+            print(f"User sync complete. {len(df)} users processed.")
+
+    except Exception as e:
+        print(f"Error syncing users from Excel: {e}")
+
 
 
 # Main function to process and insert data
