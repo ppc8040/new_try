@@ -7,6 +7,7 @@ import time
 import threading
 from flaskr.home import home_bp
 from flaskr.views import views
+from flaskr.final_db import run_data_update, sync_users_from_excel
 
 def create_app():
     app = Flask(__name__)
@@ -40,7 +41,6 @@ def create_app():
     # Route for handling login
     @app.route('/login_user', methods=['POST'])
     def login():
-        """Login logic."""
         username = request.form.get('username')
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
@@ -66,17 +66,17 @@ def create_app():
 
     def schedule_updates():
         import schedule
-
-        # Schedule the function to run every 6 hours
+    
         schedule.every(1).hours.do(run_data_update)
-
-        # Run the schedule in a separate thread
+        schedule.every(1).hours.do(sync_users_from_excel)
+    
         def run_scheduler():
             while True:
                 schedule.run_pending()
                 time.sleep(1)
-
+    
         threading.Thread(target=run_scheduler, daemon=True).start()
+
 
     # Start the scheduler
     schedule_updates()
