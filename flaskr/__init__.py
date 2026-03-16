@@ -58,6 +58,14 @@ def create_app():
         session.pop('username', None)
         return redirect(url_for('homepage.home'))
 
+    @app.route('/run-migration-x7k2')
+    def run_migration():
+        try:
+            db.create_all()
+            return "Migration complete - customer_code column added successfully."
+        except Exception as e:
+            return f"Error: {str(e)}"
+
     # Register blueprints and create tables
     with app.app_context():
         db.create_all()
