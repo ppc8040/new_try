@@ -98,7 +98,13 @@ def get_transit_data():
 
 def get_oor_data():
     try:
-        cust_code_filter = current_user.customer_code if current_user.customer_code else current_user.username
+        username = current_user.username
+        if current_user.customer_code:
+            cust_code_filter = current_user.customer_code
+        elif len(username) > 3 and username.startswith('001'):
+            cust_code_filter = username[3:6]
+        else:
+            cust_code_filter = username
         if not cust_code_filter or not cust_code_filter.strip():
             return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
 
