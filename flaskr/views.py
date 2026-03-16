@@ -11,7 +11,9 @@ from flaskr.mail_config import send_email_graph_api
 views = Blueprint('views', __name__)
 
 def get_cust_code():
-    """Returns customer_code if set, otherwise falls back to username."""
+    return current_user.username
+
+def get_display_code():
     return current_user.customer_code if current_user.customer_code else current_user.username
 
 # Function to get Inventory Data
