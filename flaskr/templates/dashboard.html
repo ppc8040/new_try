@@ -35,7 +35,7 @@
         <!-- Dynamic Search Bar -->
         <label for="search-input">
             <input type="text" id="search-input"
-                   placeholder="Search by {{ 'Customer Part' if active_tab == 'Inventory' else 'Customer Part' if active_tab == 'Transit' else 'Customer Part/PO#' if active_tab == 'Open Order' else 'Customer Part' }} "
+                   placeholder="{% if is_master %}Search by Customer Code, Indus Part, Customer Part{% if active_tab == 'Open Order' %}, Customer PO#{% endif %}{% else %}Search by {{ 'Customer Part' if active_tab == 'Inventory' else 'Customer Part' if active_tab == 'Transit' else 'Customer Part/PO#' if active_tab == 'Open Order' else 'Customer Part' }}{% endif %}"
                    onkeyup="filterTable()" class="search-bar">
         </label>
     </div>
@@ -155,7 +155,7 @@
                             {% for header in tabs_data['Releases'].headers %}
                             <th>{{ header }}</th>
                             {% endfor %}
-                            <th>No. of pallets for Release</th> <!-- New Input Column -->
+                            {% if not is_master %}<th>No. of pallets for Release</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -164,9 +164,11 @@
                             {% for col in row %}
                             <td>{{ col }}</td>
                             {% endfor %}
+                            {% if not is_master %}
                             <td>
                                 <input type="number" class="pallet-input" data-index="{{ loop.index0 }}" min="0">
                             </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -174,9 +176,11 @@
             </div>
         </div>
 
+        {% if not is_master %}
         <div class="button-container">
             <button onclick="confirmRelease()" class="confirm-button">Confirm</button>
         </div>
+        {% endif %}
         
         <!-- Popup Modal - Release Summary -->
         <div id="releaseModal" class="modal">
