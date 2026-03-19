@@ -330,13 +330,22 @@ def submit_releases():
         table_html += "<tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>"
     table_html += "</table>"
 
+    notes = request_json.get('notes', '').strip()
+
     recipient_email = ["shabbir.kachwala@indusair.ae","logisticsdbx3@indusair.ae","logisticsdbx2@indusair.ae","logisticsdbx@indusair.ae","logisticsdbx1@indusair.ae"]
     subject = f"{username}_New Release Request"
+
+    notes_section = ""
+    if notes:
+        notes_section = f"<p><strong>Release Notes:</strong></p><p style='white-space: pre-wrap;'>{notes}</p>"
+
     body = f"""
         <p>A new release request has been submitted. Below are the details:</p>
         {table_html}
+        {notes_section}
         <p>Best Regards,<br>Your System</p>
     """
+
 
     try:
         # Send email using Microsoft Graph API
