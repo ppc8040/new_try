@@ -13,183 +13,216 @@ views = Blueprint('views', __name__)
 # Function to get Inventory Data
 def get_inventory_data():
     try:
-        query = text("""
-            SELECT 
-                cust_code AS "Customer Code", 
-                indus_part AS "Indus Part", 
-                customer_part AS "Customer Part", 
-                in_transit_stock AS "In Transit Stock", 
-                warehouse_stock AS "Warehouse Stock",
-                reserved_qty as "Released Qty Awaiting Pickup",
-                days_0_30 AS "0-30 Days", 
-                days_31_60 AS "31-60 Days", 
-                days_61_90 AS "61-90 Days", 
-                days_91_120 AS "91-120 Days", 
-                days_121_180 AS "121-180 Days", 
-                days_181_240 AS "181-240 Days", 
-                days_gt_240 AS ">240 Days", 
-                warehouse_transit AS "Warehouse + Transit"
-            FROM inventory_db 
-            WHERE cust_code = :cust_code
-            ORDER BY warehouse_stock DESC
-        """)
-        # Execute the query and fetch the result into a Pandas DataFrame
-        result = db.session.execute(query, {'cust_code': current_user.username})
-        df = pd.DataFrame(result.fetchall(), columns=result.keys())
-        
-
-        if not df.empty:
-            table_headers = df.columns.tolist()
-            table_rows = df.values.tolist()
+        is_master = current_user.username == 'MASTER'
+        if is_master:
+            query = text("""
+                SELECT 
+                    cust_code AS "Customer Code", 
+                    indus_part AS "Indus Part", 
+                    customer_part AS "Customer Part", 
+                    in_transit_stock AS "In Transit Stock", 
+                    warehouse_stock AS "Warehouse Stock",
+                    reserved_qty as "Released Qty Awaiting Pickup",
+                    days_0_30 AS "0-30 Days", 
+                    days_31_60 AS "31-60 Days", 
+                    days_61_90 AS "61-90 Days", 
+                    days_91_120 AS "91-120 Days", 
+                    days_121_180 AS "121-180 Days", 
+                    days_181_240 AS "181-240 Days", 
+                    days_gt_240 AS ">240 Days", 
+                    warehouse_transit AS "Warehouse + Transit"
+                FROM inventory_db 
+                ORDER BY cust_code, warehouse_stock DESC
+            """)
+            result = db.session.execute(query)
         else:
-            table_headers = ["Currently no stock in the warehouse"]
-            table_rows = [[""]]
+            query = text("""
+                SELECT 
+                    cust_code AS "Customer Code", 
+                    indus_part AS "Indus Part", 
+                    customer_part AS "Customer Part", 
+                    in_transit_stock AS "In Transit Stock", 
+                    warehouse_stock AS "Warehouse Stock",
+                    reserved_qty as "Released Qty Awaiting Pickup",
+                    days_0_30 AS "0-30 Days", 
+                    days_31_60 AS "31-60 Days", 
+                    days_61_90 AS "61-90 Days", 
+                    days_91_120 AS "91-120 Days", 
+                    days_121_180 AS "121-180 Days", 
+                    days_181_240 AS "181-240 Days", 
+                    days_gt_240 AS ">240 Days", 
+                    warehouse_transit AS "Warehouse + Transit"
+                FROM inventory_db 
+                WHERE cust_code = :cust_code
+                ORDER BY warehouse_stock DESC
+            """)
+            result = db.session.execute(query, {'cust_code': current_user.username})
 
-        return {'headers': table_headers, 'rows': table_rows}
-
+        df = pd.DataFrame(result.fetchall(), columns=result.keys())
+        if not df.empty:
+            return {'headers': df.columns.tolist(), 'rows': df.values.tolist()}
+        else:
+            return {'headers': ["Currently no stock in the warehouse"], 'rows': [[""]]}
     except Exception as e:
         return {'headers': ["Error"], 'rows': [[str(e)]]}
 
 # Function to get Transit Data
 def get_transit_data():
     try:
-        # Execute the query to get data from transit_db table
-        query = text(""" 
-            SELECT 
-                indus_part AS "Indus Part", 
-                customer_part_no AS "Customer Part", 
-                customer_code AS "Customer Code", 
-                pallet_qty AS "Coils/Pallet", 
-                num_of_pallet AS "Number of Pallets", 
-                total_qty AS "Total Coils", 
-                container_number AS "Container Number", 
-                eta_arrival_to_va AS "ETA to Warehouse"
-            FROM transit_db 
-            WHERE customer_code = :cust_code
-            ORDER BY eta_arrival_to_va ASC
-        """)
-        
-        # Execute the query and fetch the result into a Pandas DataFrame
-        result = db.session.execute(query, {'cust_code': current_user.username})
-        df = pd.DataFrame(result.fetchall(), columns=result.keys())
+        is_master = current_user.username == 'MASTER'
+        if is_master:
+            query = text("""
+                SELECT 
+                    customer_code AS "Customer Code",
+                    indus_part AS "Indus Part", 
+                    customer_part_no AS "Customer Part", 
+                    pallet_qty AS "Coils/Pallet", 
+                    num_of_pallet AS "Number of Pallets", 
+                    total_qty AS "Total Coils", 
+                    container_number AS "Container Number", 
+                    eta_arrival_to_va AS "ETA to Warehouse"
+                FROM transit_db 
+                ORDER BY customer_code, eta_arrival_to_va ASC
+            """)
+            result = db.session.execute(query)
+        else:
+            query = text("""
+                SELECT 
+                    indus_part AS "Indus Part", 
+                    customer_part_no AS "Customer Part", 
+                    customer_code AS "Customer Code", 
+                    pallet_qty AS "Coils/Pallet", 
+                    num_of_pallet AS "Number of Pallets", 
+                    total_qty AS "Total Coils", 
+                    container_number AS "Container Number", 
+                    eta_arrival_to_va AS "ETA to Warehouse"
+                FROM transit_db 
+                WHERE customer_code = :cust_code
+                ORDER BY eta_arrival_to_va ASC
+            """)
+            result = db.session.execute(query, {'cust_code': current_user.username})
 
-        # If the dataframe is empty, return an error
+        df = pd.DataFrame(result.fetchall(), columns=result.keys())
         if df.empty:
             return {'headers': ["Currently no stock in transit to the warehouse"], 'rows': [[""]]}
 
-        # Reorder columns if required (same logic as in your existing code)
-        column_to_move = 'Customer Code'
-        new_order = [column_to_move] + [col for col in df.columns if col != column_to_move]
-        df = df[new_order]
-
-         # Convert date columns to datetime format and format to 'dd-MMM-yy'
-        data_column = ['ETA to Warehouse']
-        for col in data_column:
+        date_columns = ['ETA to Warehouse']
+        for col in date_columns:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors='coerce')
                 df = df.sort_values(by=col, ascending=True)
-                df[col] = df[col].dt.strftime('%d-%b-%y').fillna('')    
+                df[col] = df[col].dt.strftime('%d-%b-%y').fillna('')
 
-        # Prepare table headers and rows for the response
-        table_headers = df.columns.tolist()
-        table_rows = df.values.tolist()
-
-        return {'headers': table_headers, 'rows': table_rows}
-
+        return {'headers': df.columns.tolist(), 'rows': df.values.tolist()}
     except Exception as e:
         return {'headers': ["Error"], 'rows': [[str(e)]]}
 
 def get_oor_data():
     try:
-        # Extract the customer code from the current user's username (cust_code_filter)
-        if len(current_user.username) == 3:
-            cust_code_filter = current_user.username
+        is_master = current_user.username == 'MASTER'
+        if is_master:
+            query = text("""
+                SELECT 
+                    actual_customer AS "Customer Code", 
+                    customer_po_number AS "Customer PO#", 
+                    date_of_receiving_po AS "Date of Receiving PO#", 
+                    customer_required_delivery_date AS "Required Delivery Date",  
+                    customer_material AS "Customer Part", 
+                    indus_product AS "Indus Part", 
+                    ordered_quantity AS "Ordered Quantity", 
+                    delivered_quantity AS "Delivered Quantity", 
+                    open_quantity AS "Open Quantity",
+                    stock_in_virginia AS "Stock in Warehouse",
+                    stock_in_transit AS "Stock in Transit",
+                    stock_at_indus AS "Stock at Indus- Dubai", 
+                    to_be_manufactured AS "Manufacturing WIP"
+                FROM customer_orders 
+                ORDER BY actual_customer, date_of_receiving_po ASC
+            """)
+            result = db.session.execute(query)
         else:
-            cust_code_filter = current_user.username[3:6]
-        if not cust_code_filter.strip():  # .strip() handles whitespace too
-            return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
+            if len(current_user.username) == 3:
+                cust_code_filter = current_user.username
+            else:
+                cust_code_filter = current_user.username[3:6]
+            if not cust_code_filter.strip():
+                return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
 
-        # Check if the user is in the hidden_tab for OOR
-        hidden_tabs_status = get_hidden_tabs(current_user.username)
-        hide_stock_columns = hidden_tabs_status["hide_transit_button"]
+            hidden_tabs_status = get_hidden_tabs(current_user.username)
+            hide_stock_columns = hidden_tabs_status["hide_transit_button"]
 
-        query = text("""
-            SELECT 
-                actual_customer AS "Customer Code", 
-                customer_po_number AS "Customer PO#", 
-                date_of_receiving_po AS "Date of Receiving PO#", 
-                customer_required_delivery_date AS "Required Delivery Date",  
-                customer_material AS "Customer Part", 
-                indus_product AS "Indus Part", 
-                ordered_quantity AS "Ordered Quantity", 
-                delivered_quantity AS "Delivered Quantity", 
-                open_quantity AS "Open Quantity", 
-                """ + ("" if hide_stock_columns else "stock_in_virginia AS \"Stock in Warehouse\", stock_in_transit AS \"Stock in Transit\", ") + """
-                stock_at_indus AS "Stock at Indus- Dubai", 
-                to_be_manufactured AS "Manufacturing WIP"
-            FROM customer_orders 
-            WHERE actual_customer LIKE :cust_code_filter
-            ORDER BY date_of_receiving_po, customer_required_delivery_date, customer_po_number ASC         
-        """)
-        
-        # Execute the query and fetch the result into a Pandas DataFrame
-        result = db.session.execute(query, {'cust_code_filter': f'%{cust_code_filter}%'})
+            query = text("""
+                SELECT 
+                    actual_customer AS "Customer Code", 
+                    customer_po_number AS "Customer PO#", 
+                    date_of_receiving_po AS "Date of Receiving PO#", 
+                    customer_required_delivery_date AS "Required Delivery Date",  
+                    customer_material AS "Customer Part", 
+                    indus_product AS "Indus Part", 
+                    ordered_quantity AS "Ordered Quantity", 
+                    delivered_quantity AS "Delivered Quantity", 
+                    open_quantity AS "Open Quantity", 
+                    """ + ("" if hide_stock_columns else "stock_in_virginia AS \"Stock in Warehouse\", stock_in_transit AS \"Stock in Transit\", ") + """
+                    stock_at_indus AS "Stock at Indus- Dubai", 
+                    to_be_manufactured AS "Manufacturing WIP"
+                FROM customer_orders 
+                WHERE actual_customer LIKE :cust_code_filter
+                ORDER BY date_of_receiving_po, customer_required_delivery_date, customer_po_number ASC         
+            """)
+            result = db.session.execute(query, {'cust_code_filter': f'%{cust_code_filter}%'})
+
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
-
-        # If the dataframe is empty, return an error message
         if df.empty:
             return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
 
-        # Convert date columns to datetime format and format to 'dd-MMM-yy'
         date_columns = ['Date of Receiving PO#', 'Required Delivery Date', 'Indus Ship Date', 'Actual Ship Date', 'ETA Virginia']
         for col in date_columns:
             if col in df.columns:
-                # Convert to datetime, where missing values will be handled correctly
                 df[col] = pd.to_datetime(df[col], errors='coerce')
-
-                # Format the date column to 'dd-MMM-yy' and replace NaT with blanks
                 df[col] = df[col].dt.strftime('%d-%b-%y').fillna('')
 
-        # Prepare table headers and rows for the response
-        table_headers = df.columns.tolist()
-        table_rows = df.values.tolist()
-
-        return {'headers': table_headers, 'rows': table_rows}
-
+        return {'headers': df.columns.tolist(), 'rows': df.values.tolist()}
     except Exception as e:
         return {'headers': ["Error"], 'rows': [[str(e)]]}
 
 def get_int_stock_data():
     try:
-        query = text("""
-            SELECT 
-                customer_code AS "Customer Code",
-                customer_part AS "Customer Part",     
-                item AS "Indus Part", 
-                pallet_size AS "Coils/Pallet",
-                alt_1_qty AS "Number of Pallets", 
-                quantity AS "Quantity"
-            FROM INT_stock_db 
-            WHERE customer_code = :customer_code
-            ORDER BY alt_1_qty DESC
-        """)
-
-        # Execute the query and fetch the result into a Pandas DataFrame
-        result = db.session.execute(query, {'customer_code': current_user.username})
-        df = pd.DataFrame(result.fetchall(), columns=result.keys())
-
-        if not df.empty:
-            table_headers = df.columns.tolist()
-            table_rows = df.values.tolist()
+        is_master = current_user.username == 'MASTER'
+        if is_master:
+            query = text("""
+                SELECT 
+                    customer_code AS "Customer Code",
+                    customer_part AS "Customer Part",     
+                    item AS "Indus Part", 
+                    pallet_size AS "Coils/Pallet",
+                    alt_1_qty AS "Number of Pallets", 
+                    quantity AS "Quantity"
+                FROM INT_stock_db 
+                ORDER BY customer_code, alt_1_qty DESC
+            """)
+            result = db.session.execute(query)
         else:
-            table_headers = ["No inventory available for releases"]
-            table_rows = [[""]]
+            query = text("""
+                SELECT 
+                    customer_code AS "Customer Code",
+                    customer_part AS "Customer Part",     
+                    item AS "Indus Part", 
+                    pallet_size AS "Coils/Pallet",
+                    alt_1_qty AS "Number of Pallets", 
+                    quantity AS "Quantity"
+                FROM INT_stock_db 
+                WHERE customer_code = :customer_code
+                ORDER BY alt_1_qty DESC
+            """)
+            result = db.session.execute(query, {'customer_code': current_user.username})
 
-        return {'headers': table_headers, 'rows': table_rows}
-
+        df = pd.DataFrame(result.fetchall(), columns=result.keys())
+        if not df.empty:
+            return {'headers': df.columns.tolist(), 'rows': df.values.tolist()}
+        else:
+            return {'headers': ["No inventory available for releases"], 'rows': [[""]]}
     except Exception as e:
         return {'headers': ["Error"], 'rows': [[str(e)]]}
-
 
 
 def get_hidden_tabs(username):
@@ -224,6 +257,16 @@ def home():
         'Releases': releases
     }  
     hidden_tabs = get_hidden_tabs(current_user.username)
+    is_master=current_user.username == 'MASTER'
+    # Add this right after the hidden_tabs line in all 4 routes:
+    if is_master:
+        hidden_tabs = {
+            "hide_oor_button": False,
+            "hide_transit_button": False,
+            "hide_inventory_button": False,
+            "hide_release_button": False
+        }
+
     if not hidden_tabs["hide_inventory_button"]:
         default_tab = 'Inventory'
     elif not hidden_tabs["hide_transit_button"]:
@@ -239,6 +282,15 @@ def transit():
     transit_data = get_transit_data()  # Get Transit data
     tabs_data = {'Transit': transit_data}  # Show Transit data
     hidden_tabs = get_hidden_tabs(current_user.username)
+    is_master=current_user.username == 'MASTER'
+    # Add this right after the hidden_tabs line in all 4 routes:
+    if is_master:
+        hidden_tabs = {
+            "hide_oor_button": False,
+            "hide_transit_button": False,
+            "hide_inventory_button": False,
+            "hide_release_button": False
+        }
     return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Transit',**hidden_tabs)
 
 # Route for the OOR tab
@@ -248,6 +300,15 @@ def oor():
     oor_data = get_oor_data()  # Get OOR data
     tabs_data = {'Open Order': oor_data}  # Show OOR data
     hidden_tabs = get_hidden_tabs(current_user.username)
+    is_master=current_user.username == 'MASTER'
+    # Add this right after the hidden_tabs line in all 4 routes:
+    if is_master:
+        hidden_tabs = {
+            "hide_oor_button": False,
+            "hide_transit_button": False,
+            "hide_inventory_button": False,
+            "hide_release_button": False
+        }
     return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Open Order',**hidden_tabs)
 
 @views.route('/releases')
@@ -256,6 +317,15 @@ def releases():
     releases = get_int_stock_data()  # Fetch INT Stock data
     tabs_data = {'Releases': releases}  # Prepare data for rendering
     hidden_tabs = get_hidden_tabs(current_user.username)
+    is_master=current_user.username == 'MASTER'
+    # Add this right after the hidden_tabs line in all 4 routes:
+    if is_master:
+        hidden_tabs = {
+            "hide_oor_button": False,
+            "hide_transit_button": False,
+            "hide_inventory_button": False,
+            "hide_release_button": False
+        }
     return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Releases', **hidden_tabs)
 
 @views.route('/download-all')
