@@ -1,7 +1,12 @@
+function isMaster() {
+    return document.body.getAttribute('data-is-master') === 'true';
+}
+
 function filterTable() {
     const input = document.getElementById('search-input');
     const filter = input.value.toUpperCase();
     const activeTab = document.querySelector('.active-tab-name').textContent.trim();
+    const master = isMaster();
 
     let table, rows, columnIndices = [];
 
@@ -9,10 +14,12 @@ function filterTable() {
         table = document.querySelector('.inventory-table');
         columnIndices = [getColumnIndex(table, 'Customer Part'),
                          getColumnIndex(table, 'Indus Part')];
+        if (master) columnIndices.push(getColumnIndex(table, 'Customer Code'));
     } else if (activeTab.includes('Transit')) {
         table = document.querySelector('.transit-table');
         columnIndices = [getColumnIndex(table, 'Customer Part'),
                          getColumnIndex(table, 'Indus Part')];
+        if (master) columnIndices.push(getColumnIndex(table, 'Customer Code'));
     } else if (activeTab.includes('Open Order')) {
         table = document.querySelector('.oor-table');
         columnIndices = [
@@ -20,15 +27,16 @@ function filterTable() {
             getColumnIndex(table, 'Customer PO#'),
             getColumnIndex(table, 'Indus Part')
         ];
+        if (master) columnIndices.push(getColumnIndex(table, 'Customer Code'));
     } else if (activeTab.includes('Releases')) {
         table = document.querySelector('.releases-table1');
-        columnIndices = [getColumnIndex(table, 'Customer Part')];
+        columnIndices = [getColumnIndex(table, 'Customer Part'),
+                         getColumnIndex(table, 'Indus Part')];
+        if (master) columnIndices.push(getColumnIndex(table, 'Customer Code'));
     }
-
 
     if (table && columnIndices.length > 0) {
         rows = table.getElementsByTagName('tr');
-
         for (let i = 1; i < rows.length; i++) {
             let isVisible = false;
             for (let columnIndex of columnIndices) {
