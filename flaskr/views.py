@@ -402,7 +402,7 @@ def submit_releases():
 
     notes = request_json.get('notes', '').strip()
 
-    recipient_email = ["shabbir.kachwala@indusair.ae","logisticsdbx3@indusair.ae","logisticsdbx2@indusair.ae","logisticsdbx@indusair.ae","logisticsdbx1@indusair.ae"]
+    recipient_email = ["shabbir.kachwala@indusair.ae","logisticsdbx3@indusair.ae","logisticsdbx2@indusair.ae","logisticsdbx@indusair.ae","logisticsdbx1@indusair.ae", "meet.shah@indusair.ae"]
     subject = f"{username}_New Release Request"
 
     notes_section = ""
