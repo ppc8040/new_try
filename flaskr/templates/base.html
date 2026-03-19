@@ -50,7 +50,7 @@
     <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
     <title>Indus Customer Portal</title>
 </head>
-<body>
+<body data-is-master="{{ 'true' if current_user.is_authenticated and current_user.username == 'MASTER' else 'false' }}">
     <header>
         <h1>
             {% if current_user.is_authenticated and current_user.username == 'MASTER' %}
