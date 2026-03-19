@@ -52,7 +52,13 @@
 </head>
 <body>
     <header>
-        <h1>Indus Customer Portal</h1>
+        <h1>
+            {% if current_user.is_authenticated and current_user.username == 'MASTER' %}
+                Customer Portal Master Login
+            {% else %}
+                Indus Customer Portal
+            {% endif %}
+        </h1>
         {% if current_user.is_authenticated %}
         <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         {% endif %}
