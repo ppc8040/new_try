@@ -1,6 +1,6 @@
 function getSelectedRows() {
     let selectedRows = [];
-    let invalidInputs = false;  // Flag to check if any input is invalid
+    let invalidInputs = false;
 
     document.querySelectorAll(".releases-table1 tbody tr").forEach((row) => {
         let inputField = row.querySelector(".pallet-input");
@@ -8,25 +8,23 @@ function getSelectedRows() {
 
         if (!isNaN(inputValue) && inputValue > 0) {
             let rowData = Array.from(row.querySelectorAll("td:not(:last-child)")).map(td => td.innerText.trim());
-            let noOfPallets = parseInt(rowData[4]);  // "No. of Pallets" column (5th column, index 4)
+            let noOfPallets = parseInt(rowData[4]);
 
-            // Check if input value exceeds the available number of pallets
             if (inputValue > noOfPallets) {
-                inputField.style.border = "2px solid red";  // Highlight invalid input with red border
-                invalidInputs = true;  // Set flag to true
+                inputField.style.border = "2px solid red";
+                invalidInputs = true;
             } else {
-                inputField.style.border = "";  // Reset border if valid
+                inputField.style.border = "";
                 rowData.push(inputValue);
                 selectedRows.push(rowData);
             }
         } else {
-            inputField.style.border = "";  // Reset border if input is not a valid number
+            inputField.style.border = "";
         }
     });
 
-    // Show an alert for invalid inputs only once, and prevent submission
     if (invalidInputs) {
-        return [];  // Return an empty array to prevent further processing
+        return [];
     }
 
     return selectedRows;
@@ -50,6 +48,18 @@ function closeModal() {
     document.getElementById("releaseModal").style.display = "none";
 }
 
+function openNotesModal() {
+    document.getElementById("releaseModal").style.display = "none";
+    document.getElementById("notesModal").style.display = "block";
+    document.getElementById("releaseNotesInput").value = "";
+    document.getElementById("releaseNotesInput").focus();
+}
+
+function closeNotesModal() {
+    document.getElementById("notesModal").style.display = "none";
+    document.getElementById("releaseModal").style.display = "block";
+}
+
 function submitReleaseData() {
     let data = getSelectedRows();
     if (data.length === 0) {
@@ -57,15 +67,19 @@ function submitReleaseData() {
         return;
     }
 
+    let notes = document.getElementById("releaseNotesInput").value.trim();
+
     fetch('/views/submit-releases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data })
+        body: JSON.stringify({ data: data, notes: notes })
     })
     .then(response => response.ok ? response.json() : Promise.reject('Network response was not ok'))
     .then(responseData => {
         alert(responseData.success ? 'Releases submitted successfully!' : 'Error: ' + (responseData.error || 'Unknown error occurred.'));
-        if (responseData.success) closeModal();
+        if (responseData.success) {
+            document.getElementById("notesModal").style.display = "none";
+        }
     })
     .catch(error => {
         console.error('Error:', error);
