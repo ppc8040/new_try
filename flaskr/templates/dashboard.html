@@ -178,7 +178,7 @@
             <button onclick="confirmRelease()" class="confirm-button">Confirm</button>
         </div>
         
-        <!-- Popup Modal -->
+        <!-- Popup Modal - Release Summary -->
         <div id="releaseModal" class="modal">
             <div class="modal-content">
                 <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -196,7 +196,21 @@
                         <!-- Selected rows will be added here via JavaScript -->
                     </tbody>
                 </table>
-                <button onclick="submitReleaseData()" class="submit-button">Submit</button>
+                <button onclick="openNotesModal()" class="submit-button">Submit</button>
+            </div>
+        </div>
+
+        <!-- Notes Modal -->
+        <div id="notesModal" class="modal">
+            <div class="modal-content notes-modal-content">
+                <span class="close-btn" onclick="closeNotesModal()">&times;</span>
+                <h2>Release Notes</h2>
+                <p class="notes-description">Please enter any specific instructions or notes for this release request (optional):</p>
+                <textarea id="releaseNotesInput" class="notes-textarea" placeholder="e.g. Please arrange delivery before 5pm, contact John on arrival..."></textarea>
+                <div class="notes-button-row">
+                    <button onclick="submitReleaseData()" class="ok-button">OK</button>
+                    <button onclick="closeNotesModal()" class="cancel-button">Cancel</button>
+                </div>
             </div>
         </div>
         
