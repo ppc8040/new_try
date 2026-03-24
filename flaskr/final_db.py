@@ -218,15 +218,14 @@ def run_data_update():
         oor_df = process_oor_data(fetch_oor_data(sheet_name="Open Order Report", header=0, usecols="A:R"))
         insert_oor_data(oor_df)
 
-        print("Fetching and processing INT_Stock_PY + INT_Stock_CAN + DIX_Stock_PY data...")
+        print("Fetching and processing INT_Stock_PY + INT_Stock_CAN data...")
         
-        # Read all three sheets
+        # Read both sheets
         df_int = fetch_excel_data(sheet_name="INT_Stock_PY", header=0, usecols="A:S")
         df_int_can = fetch_excel_data(sheet_name="INT_Stock_CAN", header=0, usecols="A:S")
-        df_dix = fetch_excel_data(sheet_name="DIX_Stock_PY", header=0, usecols="A:S")
         
         # Combine them
-        df_combined = pd.concat([df_int, df_int_can, df_dix], ignore_index=True)
+        df_combined = pd.concat([df_int, df_int_can], ignore_index=True)
         
         # Process and insert
         inventory_int_stock_df = process_data_int_stock(df_combined)
