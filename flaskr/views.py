@@ -195,10 +195,13 @@ def get_int_stock_data():
                     customer_part AS "Customer Part",     
                     item AS "Indus Part", 
                     pallet_size AS "Coils/Pallet",
-                    alt_1_qty AS "Number of Pallets", 
-                    quantity AS "Quantity"
+                    CASE 
+                        WHEN pallet_size > 0 THEN FLOOR((quantity - qty_reserved) / pallet_size)
+                        ELSE 0
+                    END AS "Number of Pallets", 
+                    (quantity - qty_reserved) AS "Quantity"
                 FROM INT_stock_db 
-                ORDER BY customer_code, alt_1_qty DESC
+                ORDER BY customer_code, (quantity - qty_reserved) DESC
             """)
             result = db.session.execute(query)
         else:
@@ -208,11 +211,14 @@ def get_int_stock_data():
                     customer_part AS "Customer Part",     
                     item AS "Indus Part", 
                     pallet_size AS "Coils/Pallet",
-                    alt_1_qty AS "Number of Pallets", 
-                    quantity AS "Quantity"
+                    CASE 
+                        WHEN pallet_size > 0 THEN FLOOR((quantity - qty_reserved) / pallet_size)
+                        ELSE 0
+                    END AS "Number of Pallets", 
+                    (quantity - qty_reserved) AS "Quantity"
                 FROM INT_stock_db 
                 WHERE customer_code = :customer_code
-                ORDER BY alt_1_qty DESC
+                ORDER BY (quantity - qty_reserved) DESC
             """)
             result = db.session.execute(query, {'customer_code': current_user.username})
 
@@ -428,10 +434,3 @@ def submit_releases():
 
     except Exception as email_error:
         return jsonify({"error": f"An error occurred while sending the email: {str(email_error)}"}), 500
-
-
-
-
-
-
-
