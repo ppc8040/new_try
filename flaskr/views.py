@@ -496,12 +496,23 @@ def submit_releases():
         db.session.rollback()  # Rollback only if there was a DB failure
         return jsonify({"error": f"Database error: {str(db_error)}"}), 500
 
-    # Convert table data to HTML for email
+    # Build release summary table (existing)
     table_html = "<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse;'>"
     table_html += "<tr><th>Customer Code</th><th>Customer Part</th><th>Indus Part</th><th>Coils Per Pallet</th><th>No of Pallets</th><th>Quantity</th><th>Pallets for Release</th></tr>"
     for row in data:
         table_html += "<tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>"
     table_html += "</table>"
+
+    # Build Customer POs Released table (new)
+    po_allocation = request_json.get('po_allocation', [])
+    po_table_html = ""
+    if po_allocation:
+        po_table_html = "<br><p><strong>Customer POs Released</strong></p>"
+        po_table_html += "<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse;'>"
+        po_table_html += "<tr><th>Customer Code</th><th>Customer PO#</th><th>Date of Receiving PO#</th><th>Customer Part</th><th>Indus Part</th><th>Open Quantity</th><th>Quantity for Release</th><th>Remaining Open Quantity</th></tr>"
+        for row in po_allocation:
+            po_table_html += "<tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>"
+        po_table_html += "</table>"
 
     notes = request_json.get('notes', '').strip()
 
@@ -515,10 +526,10 @@ def submit_releases():
     body = f"""
         <p>A new release request has been submitted. Below are the details:</p>
         {table_html}
+        {po_table_html}
         {notes_section}
         <p>Best Regards,<br>Your System</p>
     """
-
 
     try:
         # Send email using Microsoft Graph API

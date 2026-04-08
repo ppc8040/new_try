@@ -1,5 +1,6 @@
 // Cache selected rows at Confirm time — reused by all subsequent modals
 let _cachedSelectedRows = [];
+let _cachedAllocationRows = [];
 
 function getSelectedRows() {
     let selectedRows = [];
@@ -90,11 +91,14 @@ function openPOAllocationModal() {
             return;
         }
 
+        // Cache allocation rows for inclusion in the email
+        _cachedAllocationRows = data.rows || [];
+
         let tbody = document.querySelector("#poAllocationTable tbody");
         tbody.innerHTML = '';
 
-        if (data.rows && data.rows.length > 0) {
-            data.rows.forEach(row => {
+        if (_cachedAllocationRows.length > 0) {
+            _cachedAllocationRows.forEach(row => {
                 let tr = document.createElement('tr');
                 // Highlight rows with partial fulfilment (Remaining Open Qty > 0)
                 if (typeof row[7] === 'number' && row[7] > 0) {
@@ -158,7 +162,11 @@ function submitReleaseData() {
     fetch('/views/submit-releases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: data, notes: notes })
+        body: JSON.stringify({
+            data: data,
+            notes: notes,
+            po_allocation: _cachedAllocationRows
+        })
     })
     .then(response => response.ok ? response.json() : Promise.reject('Network response was not ok'))
     .then(responseData => {
