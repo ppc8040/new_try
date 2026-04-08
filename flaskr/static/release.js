@@ -1,3 +1,6 @@
+// Cache selected rows at Confirm time — reused by all subsequent modals
+let _cachedSelectedRows = [];
+
 function getSelectedRows() {
     let selectedRows = [];
     let invalidInputs = false;
@@ -37,6 +40,9 @@ function confirmRelease() {
         return;
     }
 
+    // Cache for use throughout the rest of the flow
+    _cachedSelectedRows = selectedRows;
+
     document.querySelector("#releaseSummaryTable tbody").innerHTML = selectedRows
         .map(row => `<tr>${row.map(col => `<td>${col}</td>`).join('')}</tr>`)
         .join('');
@@ -48,24 +54,24 @@ function closeModal() {
     document.getElementById("releaseModal").style.display = "none";
 }
 
-// ── NEW: Open the PO Allocation popup when Submit is clicked ──
+// ── PO Allocation Modal — opens when Submit is clicked in Confirm Release ──
 function openPOAllocationModal() {
-    let selectedRows = getSelectedRows();
-    if (selectedRows.length === 0) {
+    let selectedRows = _cachedSelectedRows;
+    if (!selectedRows || selectedRows.length === 0) {
         alert("No valid data to submit.");
         return;
     }
 
-    // Build payload: array of {indus_part, customer_code, release_qty}
-    // selectedRows columns: [0]=CustomerCode [1]=CustomerPart [2]=IndusPart
-    //                       [3]=Coils/Pallet [4]=NumPallets [5]=Quantity [6]=PalletsForRelease
+    // Build payload
+    // Row columns: [0]=CustomerCode [1]=CustomerPart [2]=IndusPart
+    //              [3]=Coils/Pallet [4]=NumPallets [5]=Quantity [6]=PalletsForRelease
     let releaseItems = selectedRows.map(row => ({
-        customer_code: row[0],
-        customer_part: row[1],
-        indus_part:    row[2],
-        coils_per_pallet: parseInt(row[3]),
+        customer_code:       row[0],
+        customer_part:       row[1],
+        indus_part:          row[2],
+        coils_per_pallet:    parseInt(row[3]),
         pallets_for_release: parseInt(row[6]),
-        release_qty: parseInt(row[3]) * parseInt(row[6])
+        release_qty:         parseInt(row[3]) * parseInt(row[6])
     }));
 
     // Hide Confirm Release modal while loading
@@ -90,7 +96,7 @@ function openPOAllocationModal() {
         if (data.rows && data.rows.length > 0) {
             data.rows.forEach(row => {
                 let tr = document.createElement('tr');
-                // Highlight row if Remaining Open Qty > 0 (partial)
+                // Highlight rows with partial fulfilment (Remaining Open Qty > 0)
                 if (typeof row[7] === 'number' && row[7] > 0) {
                     tr.style.backgroundColor = '#fffbf0';
                 }
@@ -122,27 +128,27 @@ function closePOAllocationModal() {
 
 function proceedFromPOAllocation() {
     document.getElementById("poAllocationModal").style.display = "none";
-    // Open the existing Notes modal
+    // Open the Release Notes modal
     document.getElementById("notesModal").style.display = "block";
     document.getElementById("releaseNotesInput").value = "";
     document.getElementById("releaseNotesInput").focus();
 }
-// ── END NEW ──
+// ── END PO Allocation Modal ──
 
 function openNotesModal() {
-    // This is now called from the PO Allocation modal's Proceed button
-    // keeping the function for backward compatibility but routing through PO allocation
+    // Routes through PO Allocation first
     openPOAllocationModal();
 }
 
 function closeNotesModal() {
     document.getElementById("notesModal").style.display = "none";
-    document.getElementById("releaseModal").style.display = "block";
+    // Go back to PO Allocation modal (not Confirm Release)
+    document.getElementById("poAllocationModal").style.display = "block";
 }
 
 function submitReleaseData() {
-    let data = getSelectedRows();
-    if (data.length === 0) {
+    let data = _cachedSelectedRows;
+    if (!data || data.length === 0) {
         alert("No valid data to submit.");
         return;
     }

@@ -960,3 +960,50 @@ header h1 {
     border-color: #aab0b5;
     transform: translateY(-2px);
 }
+
+/* ===========================
+   PO ALLOCATION MODAL STYLING
+   =========================== */
+
+.po-allocation-modal-content {
+    max-width: 1050px;
+    width: 88%;
+}
+
+.po-allocation-button-row {
+    display: flex;
+    justify-content: flex-start;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+#poAllocationTable {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#poAllocationTable th,
+#poAllocationTable td {
+    border: 1px solid #e8eef3;
+    padding: 11px 12px;
+    text-align: left;
+    font-size: 14px;
+}
+
+#poAllocationTable th {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#poAllocationTable tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+#poAllocationTable tbody tr:hover {
+    background-color: #f0f4ff;
+}
