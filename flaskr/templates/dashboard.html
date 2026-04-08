@@ -182,7 +182,7 @@
         </div>
         {% endif %}
         
-        <!-- Popup Modal - Release Summary -->
+        <!-- Popup Modal 1: Confirm Release -->
         <div id="releaseModal" class="modal">
             <div class="modal-content">
                 <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -204,7 +204,38 @@
             </div>
         </div>
 
-        <!-- Notes Modal -->
+        <!-- Popup Modal 2: Customer POs Released (NEW) -->
+        <div id="poAllocationModal" class="modal">
+            <div class="modal-content po-allocation-modal-content">
+                <span class="close-btn" onclick="closePOAllocationModal()">&times;</span>
+                <h2>Customer POs Released</h2>
+                <div class="table-scroll-container1" style="max-height: 55vh; margin-top: 16px;">
+                    <table id="poAllocationTable">
+                        <thead>
+                            <tr>
+                                <th>Customer Code</th>
+                                <th>Customer PO#</th>
+                                <th>Date of Receiving PO#</th>
+                                <th>Customer Part</th>
+                                <th>Indus Part</th>
+                                <th>Open Quantity</th>
+                                <th>Quantity for Release</th>
+                                <th>Remaining Open Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Filled by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="po-allocation-button-row">
+                    <button onclick="proceedFromPOAllocation()" class="ok-button">Proceed</button>
+                    <button onclick="closePOAllocationModal()" class="cancel-button">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Popup Modal 3: Release Notes -->
         <div id="notesModal" class="modal">
             <div class="modal-content notes-modal-content">
                 <span class="close-btn" onclick="closeNotesModal()">&times;</span>
