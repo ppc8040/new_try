@@ -353,6 +353,103 @@ def download_all_tables():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+
+@views.route('/get-po-allocation', methods=['POST'])
+@login_required
+def get_po_allocation():
+    """
+    Receives a list of release items and returns a PO allocation table.
+    For each Indus Part being released, it finds all open POs (oldest first)
+    and allocates the release quantity across them sequentially.
+    """
+    if not request.is_json:
+        return jsonify({"error": "Invalid Content-Type. Expecting JSON."}), 400
+
+    request_json = request.get_json()
+    items = request_json.get('items', [])
+
+    if not items:
+        return jsonify({"error": "No items provided."}), 400
+
+    # Determine the customer code filter (same logic as get_oor_data)
+    username = current_user.username
+    if len(username) == 3:
+        cust_code_filter = username
+    else:
+        cust_code_filter = username[3:6]
+
+    result_rows = []
+
+    try:
+        for item in items:
+            indus_part   = item.get('indus_part', '').strip()
+            release_qty  = int(item.get('release_qty', 0))
+
+            if not indus_part or release_qty <= 0:
+                continue
+
+            # Fetch open POs for this Indus Part ordered oldest first
+            query = text("""
+                SELECT
+                    actual_customer        AS customer_code,
+                    customer_po_number     AS customer_po,
+                    date_of_receiving_po   AS date_receiving_po,
+                    customer_material      AS customer_part,
+                    indus_product          AS indus_part,
+                    open_quantity          AS open_qty
+                FROM customer_orders
+                WHERE indus_product = :indus_part
+                  AND actual_customer LIKE :cust_code_filter
+                  AND open_quantity > 0
+                ORDER BY date_of_receiving_po ASC
+            """)
+            result = db.session.execute(query, {
+                'indus_part': indus_part,
+                'cust_code_filter': f'%{cust_code_filter}%'
+            })
+
+            po_rows = result.fetchall()
+            remaining_release = release_qty
+
+            for po in po_rows:
+                if remaining_release <= 0:
+                    break
+
+                open_qty         = int(po.open_qty)
+                allocated        = min(open_qty, remaining_release)
+                remaining_open   = open_qty - allocated
+                remaining_release -= allocated
+
+                # Format date
+                date_val = po.date_receiving_po
+                if date_val:
+                    try:
+                        if hasattr(date_val, 'strftime'):
+                            date_str = date_val.strftime('%d-%b-%y')
+                        else:
+                            date_str = pd.to_datetime(date_val).strftime('%d-%b-%y')
+                    except Exception:
+                        date_str = str(date_val)
+                else:
+                    date_str = ''
+
+                result_rows.append([
+                    str(po.customer_code),
+                    str(po.customer_po),
+                    date_str,
+                    str(po.customer_part),
+                    str(po.indus_part),
+                    open_qty,
+                    allocated,
+                    remaining_open
+                ])
+
+        return jsonify({"rows": result_rows}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @views.route('/submit-releases', methods=['POST'])
 @login_required
 def submit_releases():
