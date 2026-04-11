@@ -116,3 +116,21 @@ class Release(db.Model):
 
     def __repr__(self):
         return f'<Release {self.id}>'
+
+
+class ReleaseCounter(db.Model):
+    """
+    Tracks the sequential release number per customer.
+    Each row is unique per customer_code.
+    The last_release_number increments by 1 on every release submission.
+    The generated Release ID format is: <customer_code><zero-padded 3-digit number>
+    e.g. 001RPC001, 001RPC002, 001CPT-AT001
+    """
+    __tablename__ = 'release_counter'
+
+    id = db.Column(db.Integer, primary_key=True)
+    customer_code = db.Column(db.String(100), unique=True, nullable=False)
+    last_release_number = db.Column(db.Integer, nullable=False, default=0)
+
+    def __repr__(self):
+        return f'<ReleaseCounter {self.customer_code}: {self.last_release_number}>'
