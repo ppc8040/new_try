@@ -1,3 +1,4 @@
+import threading
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_login import login_required, current_user
 import pandas as pd
@@ -246,7 +247,6 @@ def get_hidden_tabs(username):
         "hide_inventory_button": username in hidden_tabs["Inventory"],
         "hide_release_button": username in hidden_tabs["Release"]
     }
-
 
 
 # Route for the Dashboard (default view shows Inventory)
@@ -531,7 +531,7 @@ def submit_releases():
     """
 
     # ----------------------------------------------------------------
-    # STEP 3 — Send email (must succeed before tracker update)
+    # STEP 3 — Send email
     # ----------------------------------------------------------------
     recipient_email = [
         "shabbir.kachwala@indusair.ae",
@@ -551,9 +551,9 @@ def submit_releases():
         return jsonify({"error": f"An error occurred while sending the email: {str(email_error)}"}), 500
 
     # ----------------------------------------------------------------
-    # STEP 4 — Update Portal Release Tracker sheet in SharePoint.
-    # Runs only after email success. Returns tracker error in the
-    # success message so it is visible without breaking the release.
+    # STEP 4 — Fire-and-forget: update Portal Release Tracker in the
+    # background. Response is returned to the browser immediately
+    # after the email succeeds — the customer never waits for this.
     # ----------------------------------------------------------------
     if po_allocation:
         tracker_rows = [
@@ -576,16 +576,16 @@ def submit_releases():
             for row in data
         ]
 
-    tracker_warning = None
-    try:
-        append_to_release_tracker(release_id, username, tracker_rows)
-    except Exception as tracker_error:
-        tracker_warning = str(tracker_error)
+    def run_tracker(rid, uname, t_rows):
+        try:
+            append_to_release_tracker(rid, uname, t_rows)
+        except Exception:
+            pass  # Non-fatal: release is saved and email is sent
 
-    if tracker_warning:
-        return jsonify({
-            "success": "Releases submitted and email sent, but tracker update failed.",
-            "tracker_error": tracker_warning
-        }), 200
+    threading.Thread(
+        target=run_tracker,
+        args=(release_id, username, tracker_rows),
+        daemon=True
+    ).start()
 
     return jsonify({"success": "Releases submitted successfully, email sent!"}), 200
