@@ -7,6 +7,7 @@ from flaskr.excel_download import generate_excel_file
 from flask import send_file
 from datetime import datetime
 from flaskr.mail_config import send_email_graph_api
+from flaskr.msal_auth import append_to_release_tracker
 
 views = Blueprint('views', __name__)
 
@@ -492,10 +493,6 @@ def submit_releases():
 
         # -----------------------------------------------------------------
         # Generate unique per-customer Release ID for the email subject
-        # Uses the ReleaseCounter table: increments last_release_number by 1
-        # and formats it as <customer_code><zero-padded 3-digit number>
-        # e.g. first release for 001RPC  -> 001RPC001
-        #      first release for 001CPT-AT -> 001CPT-AT001
         # -----------------------------------------------------------------
         counter = ReleaseCounter.query.filter_by(customer_code=username).with_for_update().first()
         if counter is None:
@@ -512,6 +509,43 @@ def submit_releases():
         db.session.rollback()  # Rollback only if there was a DB failure
         return jsonify({"error": f"Database error: {str(db_error)}"}), 500
 
+    # -----------------------------------------------------------------
+    # Append rows to the Portal Release Tracker sheet in SharePoint.
+    # Uses po_allocation rows if present; falls back to the data array.
+    # Runs AFTER db.session.commit() so a tracker failure never
+    # rolls back the release — it just logs a warning in the email.
+    # -----------------------------------------------------------------
+    po_allocation = request_json.get('po_allocation', [])
+    tracker_rows = []
+
+    if po_allocation:
+        # Build rows from PO allocation table
+        # po_allocation row: [customer_code, customer_po, date_str, customer_part, indus_part, open_qty, allocated_qty, remaining_open]
+        for row in po_allocation:
+            tracker_rows.append({
+                'customer_part': str(row[3]),
+                'indus_part':    str(row[4]),
+                'customer_po':   str(row[1]),
+                'quantity':      row[6],  # allocated qty (Quantity for Release)
+            })
+    else:
+        # No PO allocation — use the confirm release data array
+        # data row: [customer_code, customer_part, indus_part, coils_per_pallet, no_of_pallets, quantity, pallets_for_release]
+        for row in data:
+            tracker_rows.append({
+                'customer_part': str(row[1]),
+                'indus_part':    str(row[2]),
+                'customer_po':   None,
+                'quantity':      row[5],  # quantity column
+            })
+
+    tracker_warning = ""
+    try:
+        append_to_release_tracker(release_id, username, tracker_rows)
+    except Exception as tracker_error:
+        # Non-fatal: release is already saved in DB and email will still send
+        tracker_warning = f"<p style='color:orange;'><strong>Note:</strong> Release tracker sheet could not be updated: {str(tracker_error)}</p>"
+
     # Build release summary table (existing)
     table_html = "<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse;'>"
     table_html += "<tr><th>Customer Code</th><th>Customer Part</th><th>Indus Part</th><th>Coils Per Pallet</th><th>No of Pallets</th><th>Quantity</th><th>Pallets for Release</th></tr>"
@@ -519,8 +553,7 @@ def submit_releases():
         table_html += "<tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>"
     table_html += "</table>"
 
-    # Build Customer POs Released table (new)
-    po_allocation = request_json.get('po_allocation', [])
+    # Build Customer POs Released table (existing)
     po_table_html = ""
     if po_allocation:
         po_table_html = "<br><p><strong>Customer POs Released</strong></p>"
@@ -544,6 +577,7 @@ def submit_releases():
         {table_html}
         {po_table_html}
         {notes_section}
+        {tracker_warning}
         <p>Best Regards,<br>Your System</p>
     """
 
