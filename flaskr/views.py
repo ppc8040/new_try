@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request,jsonify, redirect,url_for
 from flask_login import login_required, current_user
 import pandas as pd
 from sqlalchemy import text
-from flaskr.models import db
+from flaskr.models import db, ReleaseCounter
 from flaskr.excel_download import generate_excel_file
 from flask import send_file
 from datetime import datetime
@@ -490,7 +490,23 @@ def submit_releases():
                 'requested_at': datetime.now()
             })
 
-        db.session.commit()  # Commit only after all inserts succeed
+        # -----------------------------------------------------------------
+        # Generate unique per-customer Release ID for the email subject
+        # Uses the ReleaseCounter table: increments last_release_number by 1
+        # and formats it as <customer_code><zero-padded 3-digit number>
+        # e.g. first release for 001RPC  -> 001RPC001
+        #      first release for 001CPT-AT -> 001CPT-AT001
+        # -----------------------------------------------------------------
+        counter = ReleaseCounter.query.filter_by(customer_code=username).with_for_update().first()
+        if counter is None:
+            counter = ReleaseCounter(customer_code=username, last_release_number=1)
+            db.session.add(counter)
+        else:
+            counter.last_release_number += 1
+
+        release_id = f"{username}{counter.last_release_number:03d}"
+
+        db.session.commit()  # Commit releases + counter update together
 
     except Exception as db_error:
         db.session.rollback()  # Rollback only if there was a DB failure
@@ -517,7 +533,7 @@ def submit_releases():
     notes = request_json.get('notes', '').strip()
 
     recipient_email = ["shabbir.kachwala@indusair.ae","logisticsdbx3@indusair.ae","logisticsdbx2@indusair.ae","logisticsdbx@indusair.ae","logisticsdbx1@indusair.ae", "meet.shah@indusair.ae"]
-    subject = f"{username}_New Release Request"
+    subject = f"{username}_New Release Request_ReleaseID: {release_id}"
 
     notes_section = ""
     if notes:
