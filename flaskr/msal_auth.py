@@ -93,37 +93,44 @@ def append_to_release_tracker(release_id, username, rows):
     Appends new rows to the 'Portal Release Tracker' sheet using the
     Graph API Excel workbook/worksheets/range PATCH endpoint.
 
-    Optimisations vs previous version:
-      - Hardcoded _WORKBOOK_BASE skips the driveItem metadata round-trip.
-      - All rows are written in a SINGLE PATCH call (one range covering
-        all rows at once) instead of one PATCH per row.
+    KEY FIX: SharePoint's usedRange is unreliable — it reports phantom rows
+    caused by formatting or previously cleared cells. Instead of trusting the
+    usedRange address string, we scan column A of the returned values to find
+    the last row that actually contains data. This is the same pattern used in
+    indus-warehouse-tracker/app/services/graph_client.py → append_row().
 
-    Each item in `rows` is a dict with keys:
-        customer_part, indus_part, customer_po, quantity
+    All rows for a single release are written in ONE PATCH call.
     """
     token       = get_access_token()
     auth_header = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
 
-    # --- Step 1: find the last used row (1 API call) ---
+    # --- Step 1: fetch usedRange values (not just the address) ---
     used_range_url = f"{_WORKBOOK_BASE}/worksheets/{_TRACKER_SHEET}/usedRange"
     ur = requests.get(used_range_url, headers=auth_header)
     if ur.status_code != 200:
         raise Exception(f"Failed to get usedRange. Status: {ur.status_code}, {ur.text}")
 
-    used_address = ur.json().get('address', '')
-    try:
-        cell_range   = used_address.split('!')[-1]            # e.g. "A1:J42"
-        last_row_str = ''.join(filter(str.isdigit, cell_range.split(':')[-1]))  # "42"
-        last_row     = int(last_row_str)
-    except Exception:
-        last_row = 1  # fallback: only header row present
+    all_values = ur.json().get('values', [])
 
-    # --- Step 2: build all row values ---
+    # --- Step 2: find last real row by scanning column A only ---
+    # usedRange can include phantom rows from cleared cells or formatting.
+    # Column A (ReleaseID) is always filled for every real data row.
+    # We scan every row and keep track of the highest index where col A is non-empty.
+    last_data_row = 0  # 0-based index of last real row in all_values
+    for i, row in enumerate(all_values):
+        col_a = row[0] if len(row) > 0 else None
+        if col_a is not None and str(col_a).strip() != '':
+            last_data_row = i  # keep updating — final value = last non-empty col-A row
+
+    # Convert to Excel 1-based row number for the first new row:
+    # last_data_row is 0-based → +1 for 1-based → +1 to go past it = +2
+    first_new_row = last_data_row + 2
+    last_new_row  = first_new_row + len(rows) - 1
+
+    # --- Step 3: build all row values ---
     date_of_request = datetime.now().strftime('%d-%b-%y')
-    first_new_row   = last_row + 1
-    last_new_row    = last_row + len(rows)
 
-    all_values = [
+    all_new_values = [
         [
             release_id,
             username,
@@ -139,14 +146,14 @@ def append_to_release_tracker(release_id, username, rows):
         for row in rows
     ]
 
-    # --- Step 3: single PATCH for all rows at once ---
+    # --- Step 4: single PATCH for all rows at once ---
     range_address = f'A{first_new_row}:J{last_new_row}'
     range_url     = f"{_WORKBOOK_BASE}/worksheets/{_TRACKER_SHEET}/range(address='{range_address}')"
 
     patch_resp = requests.patch(
         range_url,
         headers=auth_header,
-        json={'values': all_values}
+        json={'values': all_new_values}
     )
     if patch_resp.status_code not in (200, 201):
         raise Exception(
