@@ -552,12 +552,10 @@ def submit_releases():
 
     # ----------------------------------------------------------------
     # STEP 4 — Update Portal Release Tracker sheet in SharePoint.
-    # Runs only after email success. Non-fatal: a tracker failure
-    # does NOT roll back the release or fail the response to the
-    # browser. The release is already saved and the email already sent.
+    # Runs only after email success. Returns tracker error in the
+    # success message so it is visible without breaking the release.
     # ----------------------------------------------------------------
     if po_allocation:
-        # po_allocation row: [customer_code, customer_po, date_str, customer_part, indus_part, open_qty, allocated_qty, remaining_open]
         tracker_rows = [
             {
                 'customer_part': str(row[3]),
@@ -568,7 +566,6 @@ def submit_releases():
             for row in po_allocation
         ]
     else:
-        # data row: [customer_code, customer_part, indus_part, coils_per_pallet, no_of_pallets, quantity, pallets_for_release]
         tracker_rows = [
             {
                 'customer_part': str(row[1]),
@@ -579,10 +576,16 @@ def submit_releases():
             for row in data
         ]
 
+    tracker_warning = None
     try:
         append_to_release_tracker(release_id, username, tracker_rows)
-    except Exception:
-        # Silently swallow — release is saved, email is sent
-        pass
+    except Exception as tracker_error:
+        tracker_warning = str(tracker_error)
+
+    if tracker_warning:
+        return jsonify({
+            "success": "Releases submitted and email sent, but tracker update failed.",
+            "tracker_error": tracker_warning
+        }), 200
 
     return jsonify({"success": "Releases submitted successfully, email sent!"}), 200
