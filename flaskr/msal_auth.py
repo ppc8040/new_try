@@ -12,8 +12,11 @@ authority = 'https://login.microsoftonline.com/ed97e9bb-e119-4bd4-ab00-307d64bdf
 # SharePoint Parameters
 sharepoint_site_url = 'https://indusair.sharepoint.com'
 
-# Graph API URL for US_Inventory Excel file
+# Graph API URL for US_Inventory Excel file (driveItem content endpoint)
 US_INVENTORY_GRAPH_URL = 'https://graph.microsoft.com/v1.0/sites/201c767f-23cc-4eff-b76c-47a275706531,094b21f9-6ed4-47c3-a751-3b217a18b98e/lists/4a2ba029-6536-4e0b-abf6-e0a1facddf98/items/3/driveItem/content'
+
+# driveItem ID-based base URL for Excel worksheet API (does not use /content)
+US_INVENTORY_WORKBOOK_URL = 'https://graph.microsoft.com/v1.0/sites/201c767f-23cc-4eff-b76c-47a275706531,094b21f9-6ed4-47c3-a751-3b217a18b98e/drives/b!f3YcIMyT70u3bEeicXBljfkhSwoN1sNHp1E7IXoYuY6pKksmpTZO4LBBqxehiLiu/items/01QYIYROF6Y2GOVW7725BZO354PWSELRRZ'
 
 # Function to get an access token
 def get_access_token():
@@ -48,8 +51,7 @@ def fetch_oor_data(sheet_name, header=0, usecols=None):
     token = get_access_token()
     headers = {'Authorization': f'Bearer {token}'}
     
-    # Construct the Microsoft Graph API URL for the Excel file content
-    graph_url = f'https://graph.microsoft.com/v1.0/sites/201c767f-23cc-4eff-b76c-47a275706531,094b21f9-6ed4-47c3-a751-3b217a18b98e/lists/4a2ba029-6536-4e0b-abf6-e0a1facddf98/items/14/driveItem/content'
+    graph_url = 'https://graph.microsoft.com/v1.0/sites/201c767f-23cc-4eff-b76c-47a275706531,094b21f9-6ed4-47c3-a751-3b217a18b98e/lists/4a2ba029-6536-4e0b-abf6-e0a1facddf98/items/14/driveItem/content'
     
     response = requests.get(graph_url, headers=headers)
     if response.status_code == 200:
@@ -75,58 +77,101 @@ def upload_excel_file(file_bytes):
         raise Exception(f"Failed to upload Excel file. Status code: {response.status_code}, Response: {response.text}")
 
 
-def append_to_release_tracker(release_id, username, rows):
+def _get_drive_item_id():
     """
-    Downloads the US_Inventory Excel file, appends new rows to the
-    'Portal Release Tracker' sheet only, and uploads it back.
-
-    Each item in `rows` is a dict with keys:
-        customer_part, indus_part, customer_po, quantity
-
-    Other sheets are never read or modified.
+    Resolves the driveItem ID for the US_Inventory file by following the
+    redirect from the /content endpoint. Returns the driveItem ID string.
     """
     token = get_access_token()
     headers = {'Authorization': f'Bearer {token}'}
+    # HEAD request on /content returns a redirect; we need the driveItem metadata instead
+    meta_url = (
+        'https://graph.microsoft.com/v1.0/sites/'
+        '201c767f-23cc-4eff-b76c-47a275706531,'
+        '094b21f9-6ed4-47c3-a751-3b217a18b98e'
+        '/lists/4a2ba029-6536-4e0b-abf6-e0a1facddf98'
+        '/items/3/driveItem'
+    )
+    resp = requests.get(meta_url, headers=headers)
+    if resp.status_code != 200:
+        raise Exception(f"Failed to get driveItem metadata. Status: {resp.status_code}, {resp.text}")
+    data = resp.json()
+    parent_ref = data.get('parentReference', {})
+    drive_id   = parent_ref.get('driveId', '')
+    item_id    = data.get('id', '')
+    if not drive_id or not item_id:
+        raise Exception(f"Could not extract driveId/itemId from metadata: {data}")
+    return drive_id, item_id
 
-    # Download the full Excel file as binary
-    response = requests.get(US_INVENTORY_GRAPH_URL, headers=headers)
-    if response.status_code != 200:
-        raise Exception(f"Failed to download Excel for tracker update. Status: {response.status_code}")
 
-    # Open with openpyxl — preserves all other sheets byte-for-byte
-    workbook = openpyxl.load_workbook(io.BytesIO(response.content))
+def append_to_release_tracker(release_id, username, rows):
+    """
+    Appends new rows to the 'Portal Release Tracker' sheet of the US_Inventory
+    Excel file using the Microsoft Graph API Excel worksheets/rows endpoint.
+    This avoids downloading and re-uploading the whole workbook with openpyxl,
+    which was silently corrupting or failing on the file.
 
-    # Target only the Portal Release Tracker sheet
-    sheet = workbook['Portal Release Tracker']
+    Each item in `rows` is a dict with keys:
+        customer_part, indus_part, customer_po, quantity
+    """
+    token       = get_access_token()
+    auth_header = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
 
-    # Find the next empty row (after header row 1)
-    next_row = sheet.max_row + 1
-    # Handle case where sheet has only the header and max_row returns 1
-    # Walk back to find actual last filled row to avoid blank row gaps
-    while next_row > 2 and all(sheet.cell(row=next_row - 1, column=c).value is None for c in range(1, 11)):
-        next_row -= 1
+    # --- Step 1: resolve the driveId and itemId dynamically ---
+    drive_id, item_id = _get_drive_item_id()
 
-    # Format date as 11-Apr-26
+    workbook_base = (
+        f'https://graph.microsoft.com/v1.0'
+        f'/drives/{drive_id}/items/{item_id}/workbook'
+    )
+
+    # --- Step 2: find the used range to determine next empty row ---
+    sheet_name_encoded = 'Portal%20Release%20Tracker'
+    used_range_url = f"{workbook_base}/worksheets/{sheet_name_encoded}/usedRange"
+    ur = requests.get(used_range_url, headers=auth_header)
+    if ur.status_code != 200:
+        raise Exception(f"Failed to get usedRange. Status: {ur.status_code}, {ur.text}")
+
+    used_data    = ur.json()
+    used_address = used_data.get('address', '')
+    # address is like "Portal Release Tracker!A1:J42" — extract last row number
+    try:
+        cell_range   = used_address.split('!')[-1]          # e.g. "A1:J42"
+        last_row_str = ''.join(filter(str.isdigit, cell_range.split(':')[-1]))  # "42"
+        last_row     = int(last_row_str)
+    except Exception:
+        last_row = 1  # fallback: treat as only header row present
+
+    # --- Step 3: format date ---
     date_of_request = datetime.now().strftime('%d-%b-%y')
 
-    # Append one row per line item
-    for row in rows:
-        sheet.cell(row=next_row, column=1).value  = release_id              # ReleaseID
-        sheet.cell(row=next_row, column=2).value  = username                # Customer Code
-        sheet.cell(row=next_row, column=3).value  = date_of_request         # Date of Request
-        sheet.cell(row=next_row, column=4).value  = row['customer_part']    # Customer Part
-        sheet.cell(row=next_row, column=5).value  = row['indus_part']       # Indus Part
-        sheet.cell(row=next_row, column=6).value  = row['customer_po']      # Customer PO# (blank if no PO)
-        sheet.cell(row=next_row, column=7).value  = row['quantity']         # Quantity for Release
-        sheet.cell(row=next_row, column=8).value  = 'Pending'               # Release Status
-        sheet.cell(row=next_row, column=9).value  = None                    # Invoice no. (untouched)
-        sheet.cell(row=next_row, column=10).value = None                    # PL no. (untouched)
-        next_row += 1
+    # --- Step 4: append one row per item via /range(address) PATCH ---
+    for i, row in enumerate(rows):
+        target_row = last_row + 1 + i
+        # Columns A-J (1-10)
+        range_address = f'A{target_row}:J{target_row}'
+        range_url     = f"{workbook_base}/worksheets/{sheet_name_encoded}/range(address='{range_address}')"
 
-    # Save workbook back to bytes in memory
-    output = io.BytesIO()
-    workbook.save(output)
-    output.seek(0)
+        row_values = [[
+            release_id,
+            username,
+            date_of_request,
+            row.get('customer_part') or '',
+            row.get('indus_part')    or '',
+            row.get('customer_po')   or '',
+            row.get('quantity')      if row.get('quantity') is not None else '',
+            'Pending',
+            '',   # Invoice no.
+            ''    # PL no.
+        ]]
 
-    # Upload back to SharePoint
-    upload_excel_file(output.read())
+        patch_resp = requests.patch(
+            range_url,
+            headers=auth_header,
+            json={'values': row_values}
+        )
+        if patch_resp.status_code not in (200, 201):
+            raise Exception(
+                f"Failed to write row {target_row} to tracker. "
+                f"Status: {patch_resp.status_code}, {patch_resp.text}"
+            )
