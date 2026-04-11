@@ -7,7 +7,6 @@ from flaskr.excel_download import generate_excel_file
 from flask import send_file
 from datetime import datetime
 from flaskr.mail_config import send_email_graph_api
-from flaskr.msal_auth import append_to_release_tracker
 
 views = Blueprint('views', __name__)
 
@@ -265,7 +264,6 @@ def home():
     }  
     hidden_tabs = get_hidden_tabs(current_user.username)
     is_master=current_user.username == 'MASTER'
-    # Add this right after the hidden_tabs line in all 4 routes:
     if is_master:
         hidden_tabs = {
             "hide_oor_button": False,
@@ -290,7 +288,6 @@ def transit():
     tabs_data = {'Transit': transit_data}  # Show Transit data
     hidden_tabs = get_hidden_tabs(current_user.username)
     is_master=current_user.username == 'MASTER'
-    # Add this right after the hidden_tabs line in all 4 routes:
     if is_master:
         hidden_tabs = {
             "hide_oor_button": False,
@@ -308,7 +305,6 @@ def oor():
     tabs_data = {'Open Order': oor_data}  # Show OOR data
     hidden_tabs = get_hidden_tabs(current_user.username)
     is_master=current_user.username == 'MASTER'
-    # Add this right after the hidden_tabs line in all 4 routes:
     if is_master:
         hidden_tabs = {
             "hide_oor_button": False,
@@ -325,7 +321,6 @@ def releases():
     tabs_data = {'Releases': releases}  # Prepare data for rendering
     hidden_tabs = get_hidden_tabs(current_user.username)
     is_master=current_user.username == 'MASTER'
-    # Add this right after the hidden_tabs line in all 4 routes:
     if is_master:
         hidden_tabs = {
             "hide_oor_button": False,
@@ -338,11 +333,8 @@ def releases():
 @views.route('/download-all')
 @login_required
 def download_all_tables():
-    # Get the logged-in username
     username = current_user.username
-    
-    # Call function to generate the Excel file
-    excel_file, file_name = generate_excel_file(username)  # Unpack the returned tuple
+    excel_file, file_name = generate_excel_file(username)
 
     if excel_file is None:
         return "Failed to generate Excel file", 500
@@ -350,7 +342,7 @@ def download_all_tables():
     return send_file(
         excel_file,
         as_attachment=True,
-        download_name=file_name,  # Use the correct filename
+        download_name=file_name,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
@@ -358,11 +350,6 @@ def download_all_tables():
 @views.route('/get-po-allocation', methods=['POST'])
 @login_required
 def get_po_allocation():
-    """
-    Receives a list of release items and returns a PO allocation table.
-    For each Indus Part being released, it finds all open POs (oldest first)
-    and allocates the release quantity across them sequentially.
-    """
     if not request.is_json:
         return jsonify({"error": "Invalid Content-Type. Expecting JSON."}), 400
 
@@ -372,7 +359,6 @@ def get_po_allocation():
     if not items:
         return jsonify({"error": "No items provided."}), 400
 
-    # Determine the customer code filter (same logic as get_oor_data)
     username = current_user.username
     if len(username) == 3:
         cust_code_filter = username
@@ -389,7 +375,6 @@ def get_po_allocation():
             if not indus_part or release_qty <= 0:
                 continue
 
-            # Fetch open POs for this Indus Part ordered oldest first
             query = text("""
                 SELECT
                     actual_customer        AS customer_code,
@@ -421,7 +406,6 @@ def get_po_allocation():
                 remaining_open   = open_qty - allocated
                 remaining_release -= allocated
 
-                # Format date
                 date_val = po.date_receiving_po
                 if date_val:
                     try:
@@ -456,19 +440,17 @@ def get_po_allocation():
 def submit_releases():
     username = current_user.username
 
-    # Ensure request contains JSON data
     if not request.is_json:
         return jsonify({"error": "Invalid Content-Type. Expecting JSON."}), 400
 
     request_json = request.get_json()
     data = request_json.get('data', [])
 
-    # Check if the 'data' field is empty or missing
     if not data:
         return jsonify({"error": "No 'data' field found in request JSON or it's empty."}), 400
 
     try:
-        # Insert data into the database
+        # Insert release rows into the database
         for row in data:
             if len(row) < 7:
                 return jsonify({"error": "Invalid row format. Each row must have at least 7 values."}), 400
@@ -491,9 +473,7 @@ def submit_releases():
                 'requested_at': datetime.now()
             })
 
-        # -----------------------------------------------------------------
-        # Generate unique per-customer Release ID for the email subject
-        # -----------------------------------------------------------------
+        # Generate unique per-customer Release ID
         counter = ReleaseCounter.query.filter_by(customer_code=username).with_for_update().first()
         if counter is None:
             counter = ReleaseCounter(customer_code=username, last_release_number=1)
@@ -506,54 +486,18 @@ def submit_releases():
         db.session.commit()  # Commit releases + counter update together
 
     except Exception as db_error:
-        db.session.rollback()  # Rollback only if there was a DB failure
+        db.session.rollback()
         return jsonify({"error": f"Database error: {str(db_error)}"}), 500
 
-    # -----------------------------------------------------------------
-    # Append rows to the Portal Release Tracker sheet in SharePoint.
-    # Uses po_allocation rows if present; falls back to the data array.
-    # Runs AFTER db.session.commit() so a tracker failure never
-    # rolls back the release — it just logs a warning in the email.
-    # -----------------------------------------------------------------
-    po_allocation = request_json.get('po_allocation', [])
-    tracker_rows = []
-
-    if po_allocation:
-        # Build rows from PO allocation table
-        # po_allocation row: [customer_code, customer_po, date_str, customer_part, indus_part, open_qty, allocated_qty, remaining_open]
-        for row in po_allocation:
-            tracker_rows.append({
-                'customer_part': str(row[3]),
-                'indus_part':    str(row[4]),
-                'customer_po':   str(row[1]),
-                'quantity':      row[6],  # allocated qty (Quantity for Release)
-            })
-    else:
-        # No PO allocation — use the confirm release data array
-        # data row: [customer_code, customer_part, indus_part, coils_per_pallet, no_of_pallets, quantity, pallets_for_release]
-        for row in data:
-            tracker_rows.append({
-                'customer_part': str(row[1]),
-                'indus_part':    str(row[2]),
-                'customer_po':   None,
-                'quantity':      row[5],  # quantity column
-            })
-
-    tracker_warning = ""
-    try:
-        append_to_release_tracker(release_id, username, tracker_rows)
-    except Exception as tracker_error:
-        # Non-fatal: release is already saved in DB and email will still send
-        tracker_warning = f"<p style='color:orange;'><strong>Note:</strong> Release tracker sheet could not be updated: {str(tracker_error)}</p>"
-
-    # Build release summary table (existing)
+    # Build release summary table
     table_html = "<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse;'>"
     table_html += "<tr><th>Customer Code</th><th>Customer Part</th><th>Indus Part</th><th>Coils Per Pallet</th><th>No of Pallets</th><th>Quantity</th><th>Pallets for Release</th></tr>"
     for row in data:
         table_html += "<tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>"
     table_html += "</table>"
 
-    # Build Customer POs Released table (existing)
+    # Build Customer POs Released table
+    po_allocation = request_json.get('po_allocation', [])
     po_table_html = ""
     if po_allocation:
         po_table_html = "<br><p><strong>Customer POs Released</strong></p>"
@@ -564,27 +508,24 @@ def submit_releases():
         po_table_html += "</table>"
 
     notes = request_json.get('notes', '').strip()
-
-    recipient_email = ["shabbir.kachwala@indusair.ae","logisticsdbx3@indusair.ae","logisticsdbx2@indusair.ae","logisticsdbx@indusair.ae","logisticsdbx1@indusair.ae", "meet.shah@indusair.ae", "siddhesh.mandhana@indusair.ae"]
-    subject = f"{username}_New Release Request_ReleaseID: {release_id}"
-
     notes_section = ""
     if notes:
         notes_section = f"<p><strong>Release Notes:</strong></p><p style='white-space: pre-wrap;'>{notes}</p>"
+
+    recipient_email = ["shabbir.kachwala@indusair.ae","logisticsdbx3@indusair.ae","logisticsdbx2@indusair.ae","logisticsdbx@indusair.ae","logisticsdbx1@indusair.ae", "meet.shah@indusair.ae", "siddhesh.mandhana@indusair.ae"]
+    subject = f"{username}_New Release Request_ReleaseID: {release_id}"
 
     body = f"""
         <p>A new release request has been submitted. Below are the details:</p>
         {table_html}
         {po_table_html}
         {notes_section}
-        {tracker_warning}
         <p>Best Regards,<br>Your System</p>
     """
 
     try:
-        # Send email using Microsoft Graph API
         email_response = send_email_graph_api(recipient_email, subject, body)
-        
+
         if email_response["status"] == "success":
             return jsonify({"success": "Releases submitted successfully, email sent!"}), 200
         else:
