@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request,jsonify, redirect,url_for
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_login import login_required, current_user
 import pandas as pd
 from sqlalchemy import text
@@ -7,6 +7,7 @@ from flaskr.excel_download import generate_excel_file
 from flask import send_file
 from datetime import datetime
 from flaskr.mail_config import send_email_graph_api
+from flaskr.msal_auth import append_to_release_tracker
 
 views = Blueprint('views', __name__)
 
@@ -252,8 +253,8 @@ def get_hidden_tabs(username):
 @views.route('/')
 @login_required
 def home():
-    inventory_data = get_inventory_data()  # Get Inventory data
-    transit_data = get_transit_data()  # Get Transit data
+    inventory_data = get_inventory_data()
+    transit_data = get_transit_data()
     oor_data = get_oor_data()
     releases = get_int_stock_data()
     tabs_data = {
@@ -261,9 +262,9 @@ def home():
         'Transit': transit_data,
         'OOR': oor_data,
         'Releases': releases
-    }  
+    }
     hidden_tabs = get_hidden_tabs(current_user.username)
-    is_master=current_user.username == 'MASTER'
+    is_master = current_user.username == 'MASTER'
     if is_master:
         hidden_tabs = {
             "hide_oor_button": False,
@@ -275,19 +276,20 @@ def home():
     if not hidden_tabs["hide_inventory_button"]:
         default_tab = 'Inventory'
     elif not hidden_tabs["hide_transit_button"]:
-        return redirect(url_for('views.transit'))  # Redirect if Inventory is hidden
+        return redirect(url_for('views.transit'))
     else:
-        return redirect(url_for('views.oor'))  # Redirect if Inventory & Transit are hidden
-    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Inventory',**hidden_tabs)
+        return redirect(url_for('views.oor'))
+    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Inventory', **hidden_tabs)
+
 
 # Route for the Transit tab
 @views.route('/transit')
 @login_required
 def transit():
-    transit_data = get_transit_data()  # Get Transit data
-    tabs_data = {'Transit': transit_data}  # Show Transit data
+    transit_data = get_transit_data()
+    tabs_data = {'Transit': transit_data}
     hidden_tabs = get_hidden_tabs(current_user.username)
-    is_master=current_user.username == 'MASTER'
+    is_master = current_user.username == 'MASTER'
     if is_master:
         hidden_tabs = {
             "hide_oor_button": False,
@@ -295,16 +297,17 @@ def transit():
             "hide_inventory_button": False,
             "hide_release_button": False
         }
-    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Transit',**hidden_tabs)
+    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Transit', **hidden_tabs)
+
 
 # Route for the OOR tab
 @views.route('/open-order')
 @login_required
 def oor():
-    oor_data = get_oor_data()  # Get OOR data
-    tabs_data = {'Open Order': oor_data}  # Show OOR data
+    oor_data = get_oor_data()
+    tabs_data = {'Open Order': oor_data}
     hidden_tabs = get_hidden_tabs(current_user.username)
-    is_master=current_user.username == 'MASTER'
+    is_master = current_user.username == 'MASTER'
     if is_master:
         hidden_tabs = {
             "hide_oor_button": False,
@@ -312,15 +315,16 @@ def oor():
             "hide_inventory_button": False,
             "hide_release_button": False
         }
-    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Open Order',**hidden_tabs)
+    return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Open Order', **hidden_tabs)
+
 
 @views.route('/releases')
 @login_required
 def releases():
-    releases = get_int_stock_data()  # Fetch INT Stock data
-    tabs_data = {'Releases': releases}  # Prepare data for rendering
+    releases = get_int_stock_data()
+    tabs_data = {'Releases': releases}
     hidden_tabs = get_hidden_tabs(current_user.username)
-    is_master=current_user.username == 'MASTER'
+    is_master = current_user.username == 'MASTER'
     if is_master:
         hidden_tabs = {
             "hide_oor_button": False,
@@ -329,6 +333,7 @@ def releases():
             "hide_release_button": False
         }
     return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Releases', **hidden_tabs)
+
 
 @views.route('/download-all')
 @login_required
@@ -369,8 +374,8 @@ def get_po_allocation():
 
     try:
         for item in items:
-            indus_part   = item.get('indus_part', '').strip()
-            release_qty  = int(item.get('release_qty', 0))
+            indus_part  = item.get('indus_part', '').strip()
+            release_qty = int(item.get('release_qty', 0))
 
             if not indus_part or release_qty <= 0:
                 continue
@@ -401,9 +406,9 @@ def get_po_allocation():
                 if remaining_release <= 0:
                     break
 
-                open_qty         = int(po.open_qty)
-                allocated        = min(open_qty, remaining_release)
-                remaining_open   = open_qty - allocated
+                open_qty        = int(po.open_qty)
+                allocated       = min(open_qty, remaining_release)
+                remaining_open  = open_qty - allocated
                 remaining_release -= allocated
 
                 date_val = po.date_receiving_po
@@ -449,8 +454,10 @@ def submit_releases():
     if not data:
         return jsonify({"error": "No 'data' field found in request JSON or it's empty."}), 400
 
+    # ----------------------------------------------------------------
+    # STEP 1 — Save to database + generate ReleaseID
+    # ----------------------------------------------------------------
     try:
-        # Insert release rows into the database
         for row in data:
             if len(row) < 7:
                 return jsonify({"error": "Invalid row format. Each row must have at least 7 values."}), 400
@@ -461,19 +468,17 @@ def submit_releases():
                 VALUES 
                 (:customer_code, :customer_part, :indus_part, :coils_per_pallet, :no_of_pallets, :quantity, :pallets_for_release, :requested_at)
             """)
-
             db.session.execute(query, {
                 'customer_code': row[0],
                 'customer_part': row[1],
-                'indus_part': row[2],
+                'indus_part':    row[2],
                 'coils_per_pallet': row[3],
                 'no_of_pallets': row[4],
-                'quantity': row[5],
+                'quantity':      row[5],
                 'pallets_for_release': int(row[6]),
-                'requested_at': datetime.now()
+                'requested_at':  datetime.now()
             })
 
-        # Generate unique per-customer Release ID
         counter = ReleaseCounter.query.filter_by(customer_code=username).with_for_update().first()
         if counter is None:
             counter = ReleaseCounter(customer_code=username, last_release_number=1)
@@ -482,27 +487,31 @@ def submit_releases():
             counter.last_release_number += 1
 
         release_id = f"{username}{counter.last_release_number:03d}"
-
-        db.session.commit()  # Commit releases + counter update together
+        db.session.commit()
 
     except Exception as db_error:
         db.session.rollback()
         return jsonify({"error": f"Database error: {str(db_error)}"}), 500
 
-    # Build release summary table
-    table_html = "<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse;'>"
-    table_html += "<tr><th>Customer Code</th><th>Customer Part</th><th>Indus Part</th><th>Coils Per Pallet</th><th>No of Pallets</th><th>Quantity</th><th>Pallets for Release</th></tr>"
+    # ----------------------------------------------------------------
+    # STEP 2 — Build email content
+    # ----------------------------------------------------------------
+    po_allocation = request_json.get('po_allocation', [])
+
+    table_html  = "<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse;'>"
+    table_html += "<tr><th>Customer Code</th><th>Customer Part</th><th>Indus Part</th>"
+    table_html += "<th>Coils Per Pallet</th><th>No of Pallets</th><th>Quantity</th><th>Pallets for Release</th></tr>"
     for row in data:
         table_html += "<tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>"
     table_html += "</table>"
 
-    # Build Customer POs Released table
-    po_allocation = request_json.get('po_allocation', [])
     po_table_html = ""
     if po_allocation:
-        po_table_html = "<br><p><strong>Customer POs Released</strong></p>"
+        po_table_html  = "<br><p><strong>Customer POs Released</strong></p>"
         po_table_html += "<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse;'>"
-        po_table_html += "<tr><th>Customer Code</th><th>Customer PO#</th><th>Date of Receiving PO#</th><th>Customer Part</th><th>Indus Part</th><th>Open Quantity</th><th>Quantity for Release</th><th>Remaining Open Quantity</th></tr>"
+        po_table_html += "<tr><th>Customer Code</th><th>Customer PO#</th><th>Date of Receiving PO#</th>"
+        po_table_html += "<th>Customer Part</th><th>Indus Part</th><th>Open Quantity</th>"
+        po_table_html += "<th>Quantity for Release</th><th>Remaining Open Quantity</th></tr>"
         for row in po_allocation:
             po_table_html += "<tr>" + "".join(f"<td>{col}</td>" for col in row) + "</tr>"
         po_table_html += "</table>"
@@ -512,9 +521,7 @@ def submit_releases():
     if notes:
         notes_section = f"<p><strong>Release Notes:</strong></p><p style='white-space: pre-wrap;'>{notes}</p>"
 
-    recipient_email = ["shabbir.kachwala@indusair.ae","logisticsdbx3@indusair.ae","logisticsdbx2@indusair.ae","logisticsdbx@indusair.ae","logisticsdbx1@indusair.ae", "meet.shah@indusair.ae", "siddhesh.mandhana@indusair.ae"]
     subject = f"{username}_New Release Request_ReleaseID: {release_id}"
-
     body = f"""
         <p>A new release request has been submitted. Below are the details:</p>
         {table_html}
@@ -523,13 +530,59 @@ def submit_releases():
         <p>Best Regards,<br>Your System</p>
     """
 
+    # ----------------------------------------------------------------
+    # STEP 3 — Send email (must succeed before tracker update)
+    # ----------------------------------------------------------------
+    recipient_email = [
+        "shabbir.kachwala@indusair.ae",
+        "logisticsdbx3@indusair.ae",
+        "logisticsdbx2@indusair.ae",
+        "logisticsdbx@indusair.ae",
+        "logisticsdbx1@indusair.ae",
+        "meet.shah@indusair.ae",
+        "siddhesh.mandhana@indusair.ae"
+    ]
+
     try:
         email_response = send_email_graph_api(recipient_email, subject, body)
-
-        if email_response["status"] == "success":
-            return jsonify({"success": "Releases submitted successfully, email sent!"}), 200
-        else:
+        if email_response["status"] != "success":
             return jsonify({"error": f"Email sending failed: {email_response['message']}"}), 500
-
     except Exception as email_error:
         return jsonify({"error": f"An error occurred while sending the email: {str(email_error)}"}), 500
+
+    # ----------------------------------------------------------------
+    # STEP 4 — Update Portal Release Tracker sheet in SharePoint.
+    # Runs only after email success. Non-fatal: a tracker failure
+    # does NOT roll back the release or fail the response to the
+    # browser. The release is already saved and the email already sent.
+    # ----------------------------------------------------------------
+    if po_allocation:
+        # po_allocation row: [customer_code, customer_po, date_str, customer_part, indus_part, open_qty, allocated_qty, remaining_open]
+        tracker_rows = [
+            {
+                'customer_part': str(row[3]),
+                'indus_part':    str(row[4]),
+                'customer_po':   str(row[1]),
+                'quantity':      row[6],
+            }
+            for row in po_allocation
+        ]
+    else:
+        # data row: [customer_code, customer_part, indus_part, coils_per_pallet, no_of_pallets, quantity, pallets_for_release]
+        tracker_rows = [
+            {
+                'customer_part': str(row[1]),
+                'indus_part':    str(row[2]),
+                'customer_po':   None,
+                'quantity':      row[5],
+            }
+            for row in data
+        ]
+
+    try:
+        append_to_release_tracker(release_id, username, tracker_rows)
+    except Exception:
+        # Silently swallow — release is saved, email is sent
+        pass
+
+    return jsonify({"success": "Releases submitted successfully, email sent!"}), 200
