@@ -66,14 +66,27 @@ function openPOAllocationModal() {
     // Build payload
     // Row columns: [0]=CustomerCode [1]=CustomerPart [2]=IndusPart
     //              [3]=Coils/Pallet [4]=NumPallets [5]=Quantity [6]=PalletsForRelease
-    let releaseItems = selectedRows.map(row => ({
-        customer_code:       row[0],
-        customer_part:       row[1],
-        indus_part:          row[2],
-        coils_per_pallet:    parseInt(row[3]),
-        pallets_for_release: parseInt(row[6]),
-        release_qty:         parseInt(row[3]) * parseInt(row[6])
-    }));
+
+    // Group by indus_part: sum (coils_per_pallet * pallets_for_release) across all rows
+    // for the same Indus Part so the backend runs ONE clean FIFO pass per part.
+    let grouped = {};
+    selectedRows.forEach(row => {
+        let indus_part = row[2];
+        let lineQty    = parseInt(row[3]) * parseInt(row[6]);  // coils/pallet × pallets for release
+
+        if (grouped[indus_part]) {
+            grouped[indus_part].release_qty += lineQty;
+        } else {
+            grouped[indus_part] = {
+                customer_code:       row[0],
+                customer_part:       row[1],
+                indus_part:          indus_part,
+                release_qty:         lineQty
+            };
+        }
+    });
+
+    let releaseItems = Object.values(grouped);
 
     // Hide Confirm Release modal while loading
     document.getElementById("releaseModal").style.display = "none";
