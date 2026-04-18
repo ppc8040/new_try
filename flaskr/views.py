@@ -226,9 +226,11 @@ def get_int_stock_data():
 
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
         if not df.empty:
-            return {'headers': df.columns.tolist(), 'rows': df.values.tolist()}
-        else:
-            return {'headers': ["No inventory available for releases"], 'rows': [[""]]}
+            # Filter out rows where both Number of Pallets and Quantity are 0
+            df = df[~((df['Number of Pallets'] == 0) & (df['Quantity'] == 0))]
+            if not df.empty:
+                return {'headers': df.columns.tolist(), 'rows': df.values.tolist()}
+        return {'headers': ["No inventory available for releases"], 'rows': [[""]]}
     except Exception as e:
         return {'headers': ["Error"], 'rows': [[str(e)]]}
 
