@@ -526,9 +526,9 @@ def submit_releases():
     subject = f"{username}_New Release Request_ReleaseID: {release_id}"
     body = f"""
         <p>A new release request has been submitted. Below are the details:</p>
+        {notes_section}
         {table_html}
         {po_table_html}
-        {notes_section}
         <p>Best Regards,<br>Your System</p>
     """
 
