@@ -149,6 +149,13 @@ def get_oor_data():
                 cust_code_filter = current_user.username[3:6]
             if not cust_code_filter.strip():
                 return {'headers': ["Currently no data available for the OOR"], 'rows': [[""]]}
+        
+            # OOR alias map: show a different customer's data for specific logins
+            OOR_CUSTOMER_ALIAS = {
+                '001PER': 'PLK',
+            }
+            if current_user.username in OOR_CUSTOMER_ALIAS:
+                cust_code_filter = OOR_CUSTOMER_ALIAS[current_user.username]
 
             hidden_tabs_status = get_hidden_tabs(current_user.username)
             hide_stock_columns = hidden_tabs_status["hide_transit_button"]
