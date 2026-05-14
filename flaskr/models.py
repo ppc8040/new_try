@@ -134,3 +134,22 @@ class ReleaseCounter(db.Model):
 
     def __repr__(self):
         return f'<ReleaseCounter {self.customer_code}: {self.last_release_number}>'
+
+
+class LoginEvent(db.Model):
+    """
+    Tracks every successful login with the username and client IP address.
+    IP is extracted from X-Forwarded-For (Heroku's real client IP header).
+    Use this to measure customer engagement and distinguish internal
+    (sales team) logins from genuine customer logins by cross-referencing
+    the ip_address against your known office public IP.
+    """
+    __tablename__ = 'login_events'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(20), nullable=False)
+    ip_address = db.Column(db.String(100), nullable=True)
+    logged_in_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f'<LoginEvent {self.username} @ {self.logged_in_at}>'

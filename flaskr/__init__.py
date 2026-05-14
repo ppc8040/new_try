@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, session, redirect, render_template, url_for
 from flask_login import LoginManager, login_user, logout_user
-from flaskr.models import db, User, Inventory
+from flaskr.models import db, User, Inventory, LoginEvent
 from flaskr.final_db import run_data_update
 import time
 import threading
@@ -47,6 +47,16 @@ def create_app():
         if user and user.check_password(password):
             login_user(user)
             session['username'] = username
+            # Track successful login: record username + real client IP
+            try:
+                forwarded_for = request.headers.get('X-Forwarded-For', request.remote_addr)
+                client_ip = forwarded_for.split(',')[0].strip()
+                event = LoginEvent(username=username, ip_address=client_ip)
+                db.session.add(event)
+                db.session.commit()
+            except Exception:
+                # Non-fatal: login still succeeds even if tracking fails
+                db.session.rollback()
             return redirect(url_for('views.home'))
         else:
             return render_template('index.html', error='Invalid username or password.')
