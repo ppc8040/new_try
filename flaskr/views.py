@@ -378,6 +378,11 @@ def get_po_allocation():
         cust_code_filter = username
     else:
         cust_code_filter = username[3:6]
+        
+    PO_CUSTOMER_ALIAS = {
+        '001PER': 'PLK',}
+    if username in PO_CUSTOMER_ALIAS:
+        cust_code_filter = PO_CUSTOMER_ALIAS[username]
 
     result_rows = []
 
