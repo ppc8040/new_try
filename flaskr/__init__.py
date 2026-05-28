@@ -1,12 +1,16 @@
 import os
+import time
+import threading
+import logging
 from flask import Flask, request, session, redirect, render_template, url_for
 from flask_login import LoginManager, login_user, logout_user
 from flaskr.models import db, User, Inventory, LoginEvent
 from flaskr.final_db import run_data_update
-import time
-import threading
 from flaskr.home import home_bp
 from flaskr.views import views
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def create_app():
     app = Flask(__name__)
@@ -18,7 +22,7 @@ def create_app():
     login_manager.login_view = 'render_login'
 
     # Setup config for database
-    uri = os.environ.get("HEROKU_POSTGRESQL_GREEN_URL") 
+    uri = os.environ.get("HEROKU_POSTGRESQL_GREEN_URL")
     if uri and uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = uri
@@ -74,21 +78,49 @@ def create_app():
         app.register_blueprint(home_bp)
         app.register_blueprint(views, url_prefix='/views')
 
-    def schedule_updates():
+    # ── SCHEDULER ──────────────────────────────────────────────────────────────
+    _scheduler_started = threading.Event()
+
+    def run_scheduler():
         import schedule
 
-        # Schedule the function to run every 6 hours
-        schedule.every(1).hours.do(run_data_update)
+        # Run once immediately on startup so data is fresh after any dyno restart
+        logger.info("[Scheduler] Running initial data update on startup...")
+        try:
+            run_data_update()
+            logger.info("[Scheduler] Initial data update complete.")
+        except Exception as e:
+            logger.error(f"[Scheduler] Initial data update failed: {e}")
 
-        # Run the schedule in a separate thread
-        def run_scheduler():
-            while True:
-                schedule.run_pending()
-                time.sleep(1)
+        schedule.every(1).hours.do(_scheduled_job)
+        _scheduler_started.set()
+        logger.info("[Scheduler] Hourly refresh scheduled. Entering loop.")
 
-        threading.Thread(target=run_scheduler, daemon=True).start()
+        while True:
+            schedule.run_pending()
+            time.sleep(30)  # check every 30s instead of every 1s — less CPU waste
 
-    # Start the scheduler
-    schedule_updates()
+    def _scheduled_job():
+        logger.info("[Scheduler] Hourly trigger fired — running data update...")
+        try:
+            run_data_update()
+            logger.info("[Scheduler] Hourly data update complete.")
+        except Exception as e:
+            logger.error(f"[Scheduler] Hourly data update failed: {e}")
+
+    def watchdog():
+        """Restarts the scheduler thread if it ever dies."""
+        _scheduler_started.wait()  # wait until first scheduler thread is actually running
+        while True:
+            time.sleep(60)
+            if not scheduler_thread.is_alive():
+                logger.warning("[Watchdog] Scheduler thread died — restarting...")
+                new_thread = threading.Thread(target=run_scheduler, daemon=True, name="scheduler")
+                new_thread.start()
+
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True, name="scheduler")
+    scheduler_thread.start()
+    threading.Thread(target=watchdog, daemon=True, name="watchdog").start()
+    # ── END SCHEDULER ──────────────────────────────────────────────────────────
 
     return app
