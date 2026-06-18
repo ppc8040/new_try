@@ -347,6 +347,9 @@ def releases():
 @login_required
 def releases_data_api():
     releases = get_int_stock_data()
+    # Don't return empty during a mid-update wipe — silently skip
+    if releases['headers'] == ['No inventory available for releases']:
+        return jsonify(None), 204
     return jsonify(releases)
 
 @views.route('/download-all')
