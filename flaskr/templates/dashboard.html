@@ -269,12 +269,14 @@
 
     fetch("{{ url_for('views.releases_data_api') }}")
       .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
+        if (res.status === 204) return null;
+        if (!res.ok) throw new Error('Network error');
         return res.json();
       })
       .then(data => {
+        if (!data) return;
+
         const tbody = document.querySelector('.releases-table1 tbody');
-        const thead = document.querySelector('.releases-table1 thead tr');
         if (!tbody || !data.rows) return;
 
         tbody.innerHTML = '';
