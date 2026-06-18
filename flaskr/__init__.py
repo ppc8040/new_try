@@ -92,7 +92,7 @@ def create_app():
         except Exception as e:
             logger.error(f"[Scheduler] Initial data update failed: {e}")
 
-        schedule.every(1).hours.do(_scheduled_job)
+        schedule.every(30).minutes.do(_scheduled_job)
         _scheduler_started.set()
         logger.info("[Scheduler] Hourly refresh scheduled. Entering loop.")
 
