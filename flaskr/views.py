@@ -343,6 +343,11 @@ def releases():
         }
     return render_template('dashboard.html', tabs_data=tabs_data, active_tab='Releases', **hidden_tabs)
 
+@views.route('/api/releases-data')
+@login_required
+def releases_data_api():
+    releases = get_int_stock_data()
+    return jsonify(releases)
 
 @views.route('/download-all')
 @login_required
