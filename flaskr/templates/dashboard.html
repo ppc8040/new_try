@@ -260,4 +260,42 @@
 <script src="{{ url_for('static', filename='filter.js') }}"></script>
 <script src="{{ url_for('static', filename='release.js') }}"></script>
 
+{% if active_tab == 'Releases' and not is_master %}
+<script>
+  function refreshReleasesTable() {
+    const hasInput = [...document.querySelectorAll('.pallet-input')]
+      .some(input => input.value && parseInt(input.value) > 0);
+    if (hasInput) return;
+
+    fetch("{{ url_for('views.releases_data_api') }}")
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(data => {
+        const tbody = document.querySelector('.releases-table1 tbody');
+        const thead = document.querySelector('.releases-table1 thead tr');
+        if (!tbody || !data.rows) return;
+
+        tbody.innerHTML = '';
+        data.rows.forEach((row, idx) => {
+          const tr = document.createElement('tr');
+          row.forEach(col => {
+            const td = document.createElement('td');
+            td.textContent = col ?? '';
+            tr.appendChild(td);
+          });
+          const inputTd = document.createElement('td');
+          inputTd.innerHTML = `<input type="number" class="pallet-input" data-index="${idx}" min="0">`;
+          tr.appendChild(inputTd);
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => console.warn('Releases refresh failed:', err));
+  }
+
+  setInterval(refreshReleasesTable, 30 * 60 * 1000);
+</script>
+{% endif %}
+
 {% endblock %}
