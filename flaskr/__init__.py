@@ -78,49 +78,25 @@ def create_app():
         app.register_blueprint(home_bp)
         app.register_blueprint(views, url_prefix='/views')
 
-    # ── SCHEDULER ──────────────────────────────────────────────────────────────
-    _scheduler_started = threading.Event()
-
+    # ── SCHEDULER ──────────────────────────────────────────────────────────
     def run_scheduler():
         import schedule
 
-        # Run once immediately on startup so data is fresh after any dyno restart
         logger.info("[Scheduler] Running initial data update on startup...")
         try:
             run_data_update()
-            logger.info("[Scheduler] Initial data update complete.")
+            logger.info("[Scheduler] Initial update complete.")
         except Exception as e:
-            logger.error(f"[Scheduler] Initial data update failed: {e}")
+            logger.error(f"[Scheduler] Initial update failed: {e}")
 
-        schedule.every(30).minutes.do(_scheduled_job)
-        _scheduler_started.set()
-        logger.info("[Scheduler] Hourly refresh scheduled. Entering loop.")
+        schedule.every(30).minutes.do(run_data_update)
+        logger.info("[Scheduler] 30-min refresh scheduled.")
 
         while True:
             schedule.run_pending()
-            time.sleep(30)  # check every 30s instead of every 1s — less CPU waste
+            time.sleep(30)
 
-    def _scheduled_job():
-        logger.info("[Scheduler] Hourly trigger fired — running data update...")
-        try:
-            run_data_update()
-            logger.info("[Scheduler] Hourly data update complete.")
-        except Exception as e:
-            logger.error(f"[Scheduler] Hourly data update failed: {e}")
-
-    def watchdog():
-        """Restarts the scheduler thread if it ever dies."""
-        _scheduler_started.wait()  # wait until first scheduler thread is actually running
-        while True:
-            time.sleep(60)
-            if not scheduler_thread.is_alive():
-                logger.warning("[Watchdog] Scheduler thread died — restarting...")
-                new_thread = threading.Thread(target=run_scheduler, daemon=True, name="scheduler")
-                new_thread.start()
-
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True, name="scheduler")
-    scheduler_thread.start()
-    threading.Thread(target=watchdog, daemon=True, name="watchdog").start()
-    # ── END SCHEDULER ──────────────────────────────────────────────────────────
-
+    threading.Thread(target=run_scheduler, daemon=True, name="scheduler").start()
+    # ── END SCHEDULER ──────────────────────────────────────────────────────
+    
     return app
