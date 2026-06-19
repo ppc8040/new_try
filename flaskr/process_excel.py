@@ -107,9 +107,9 @@ def process_oor_data(df):
         'Ordered Quantity': 'ordered_quantity',
         'Delivered Quantity': 'delivered_quantity',
         'Open Quantity': 'open_quantity',
-        'US Warehouse': 'stock_in_virginia',
-        'In Transit': 'stock_in_transit',
-        'Indus Warehouse': 'stock_at_indus',
+        '3001': 'stock_in_virginia',
+        '3003': 'stock_in_transit',
+        '1000': 'stock_at_indus',
         'Indus Ship Date': 'indus_ship_date',
         'Actual Customer': 'actual_customer',
         'To be Manufactured': 'to_be_manufactured',  # Adjusted mapping
