@@ -111,7 +111,7 @@ def insert_transit_data(df):
 
 # Function to handle missing dates
 def handle_missing_dates(date_value):
-    if date_value == '1900-01-01' or pd.isna(date_value):
+    if date_value is None or (isinstance(date_value, float) and pd.isna(date_value)):
         return None
     return date_value
 
@@ -125,17 +125,6 @@ def insert_oor_data(df):
         if not lock_and_delete_table(cursor, "customer_orders"):
             print("Failed to empty customer_orders. Aborting operation.")
             return
-        # ----------- FIX: Coerce integer columns to real numbers and fill bad values with 0 -----------
-        int_columns = [
-            'ordered_quantity', 'delivered_quantity', 'open_quantity',
-            'stock_in_virginia', 'stock_in_transit', 'stock_at_indus',
-            'to_be_manufactured'
-        ] # add or remove columns as needed to match your table definition
-        for col in int_columns:
-            if col in df.columns:
-                # Convert to numeric, make errors NaN, then fill with zero
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
-        # ----------- END FIX -----------
 
         # Insert processed OOR data
         insert_query = """
