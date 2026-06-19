@@ -55,46 +55,14 @@ def process_data_transit(df):
 
 
 def process_oor_data(df):
-    # Fill missing values with empty strings
+    # Fill missing values with empty strings initially
     df = df.fillna('')
-    
-    # Drop unnecessary columns (e.g., 'Stock at 2000')
-    columns_to_drop = ['Stock at 2000']
+
+    # Drop columns not needed for DB insertion
+    columns_to_drop = ['Stock at 2000', '2000', 'Indus Ship Date (Production)']
     df = df.drop(columns=columns_to_drop, errors='ignore')
 
-    # List of numeric columns to convert
-    numeric_columns = [
-        'Ordered Quantity',
-        'Delivered Quantity', 'Open Quantity', 'Stock in Virginia',
-        'Stock in Transit', 'Stock at Indus', 'To be manufactured'
-    ]
-
-    # List of date columns to format
-    date_columns = [
-        'Date of receiving PO#', 'Customer Required Delivery Date', 'Indus Ship Date',
-        'Actual Ship Date(First shipment date for partitial qty shipped)', 'ETA Virginia'
-    ]
-
-    # Convert date columns to datetime format and format to 'dd-MMM-yy'
-    for col in date_columns:
-        if col in df.columns:
-            df[col] = pd.to_datetime(df[col], errors='coerce')
-            df[col] = df[col].fillna('')
-            df[col] = df[col].dt.strftime('%d-%b-%y')  # Format the date as 'dd-MMM-yy'
-
-    # Convert numeric columns to integers (handling NaNs)
-    for col in numeric_columns:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype('int64')   
-
-    # Filter rows where 'Open Quantity' is greater than 0
-    if 'Open Quantity' in df.columns:
-        df = df[df['Open Quantity'] > 0]
-
-    # Replace '<NA>' values with empty strings
-    df = df.replace('<NA>', '')
-
-    # Define the column mappings (Excel -> PostgreSQL)
+    # Rename columns to snake_case FIRST before any processing
     column_mappings = {
         'Customer Code': 'customer_code',
         'Customer PO#': 'customer_po_number',
@@ -110,15 +78,38 @@ def process_oor_data(df):
         '3001': 'stock_in_virginia',
         '3003': 'stock_in_transit',
         '1000': 'stock_at_indus',
+        'To be Manufactured': 'to_be_manufactured',
         'Indus Ship Date': 'indus_ship_date',
         'Actual Customer': 'actual_customer',
-        'To be Manufactured': 'to_be_manufactured',  # Adjusted mapping
     }
-
-    # Rename columns to match PostgreSQL table
     df.rename(columns=column_mappings, inplace=True)
 
-    # Retain only the columns relevant for insertion
+    # Convert numeric columns AFTER rename (now using snake_case names)
+    numeric_columns = [
+        'ordered_quantity', 'delivered_quantity', 'open_quantity',
+        'stock_in_virginia', 'stock_in_transit', 'stock_at_indus',
+        'to_be_manufactured'
+    ]
+    for col in numeric_columns:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype('int64')
+
+    # Convert date columns — return None (not '') for empty/invalid dates
+    date_columns = [
+        'date_of_receiving_po',
+        'customer_required_delivery_date',
+        'indus_ship_date',
+    ]
+    for col in date_columns:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce')
+            df[col] = df[col].where(df[col].notna(), other=None)
+
+    # Filter rows where open_quantity > 0
+    if 'open_quantity' in df.columns:
+        df = df[df['open_quantity'] > 0]
+
+    # Keep only DB-relevant columns
     columns_to_keep = [
         'customer_code', 'customer_po_number', 'date_of_receiving_po',
         'customer_required_delivery_date', 'sales_document', 'sales_document_item',
@@ -128,7 +119,7 @@ def process_oor_data(df):
     ]
     df = df[columns_to_keep]
 
-    # Assign None (NULL) to 'actual_ship_date' and 'eta_virginia' columns since they don't exist in the Excel file
+    # These don't exist in the Excel — insert as NULL
     df['actual_ship_date'] = None
     df['eta_virginia'] = None
 
