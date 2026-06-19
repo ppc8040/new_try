@@ -1,5 +1,4 @@
 import pandas as pd
-from msal_auth import fetch_excel_data
 
 # Function to process the inventory data
 def process_data_inventory(df):
@@ -8,6 +7,7 @@ def process_data_inventory(df):
     # Drop unnecessary columns
     columns_to_drop = ['Nos of PCS/Pallet', 'Safety Stock']
     df = df.drop(columns=columns_to_drop, errors='ignore')
+    
     # Rename columns for consistency
     df = df.rename(columns={'Grand Total': 'Warehouse+Transit'})
 
@@ -17,6 +17,7 @@ def process_data_inventory(df):
         'Qty Held against existing orders awaiting pickup', '0-30 Days', '31-60 Days',
         '61-90 Days', '91-120 Days', '121-180 Days', '181-240 Days', '>240 Days', 'Warehouse+Transit', 'Pcs per pallet'
     ]
+
     # Convert columns to numeric, coercing errors and filling NaNs with 0
     for col in numeric_columns:
         if col in df.columns:
@@ -29,14 +30,12 @@ def process_data_inventory(df):
 
     # Replace <NA> values with empty string
     df = df.replace('<NA>', '')
-    return df    
+
+    return df
 
 def process_data_transit(df):
     # Fill missing values with empty strings
     df = df.fillna('')
-
-    if 'ETA Arrival to VA' in df.columns:
-        df['ETA Arrival to VA'] = df['ETA Arrival to VA'].fillna(pd.Timestamp("1900-01-01"))
 
     # Filter rows where 'In Transit' is in transit
     if 'In Transit' in df.columns:
@@ -53,6 +52,7 @@ def process_data_transit(df):
     df = df.replace('<NA>', '')
 
     return df
+
 
 def process_oor_data(df):
     # Fill missing values with empty strings
@@ -107,9 +107,9 @@ def process_oor_data(df):
         'Ordered Quantity': 'ordered_quantity',
         'Delivered Quantity': 'delivered_quantity',
         'Open Quantity': 'open_quantity',
-        3001: 'stock_in_virginia',        # Adjusted mapping
-        3003: 'stock_in_transit',         # Adjusted mapping
-        1000: 'stock_at_indus',           # Adjusted mapping
+        '3001': 'stock_in_virginia',
+        '3003': 'stock_in_transit',
+        '1000': 'stock_at_indus',
         'Indus Ship Date': 'indus_ship_date',
         'Actual Customer': 'actual_customer',
         'To be Manufactured': 'to_be_manufactured',  # Adjusted mapping
