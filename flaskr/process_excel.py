@@ -55,14 +55,14 @@ def process_data_transit(df):
 
 
 def process_oor_data(df):
-    # Fill missing values with empty strings initially
+    # Fill missing values with empty strings
     df = df.fillna('')
 
-    # Drop columns not needed for DB insertion
+    # Drop columns not needed for DB insertion (plant 2000 and production ship date)
     columns_to_drop = ['Stock at 2000', '2000', 'Indus Ship Date (Production)']
     df = df.drop(columns=columns_to_drop, errors='ignore')
 
-    # Rename columns to snake_case FIRST before any processing
+    # Rename columns FIRST so all subsequent processing uses snake_case names
     column_mappings = {
         'Customer Code': 'customer_code',
         'Customer PO#': 'customer_po_number',
@@ -84,7 +84,7 @@ def process_oor_data(df):
     }
     df.rename(columns=column_mappings, inplace=True)
 
-    # Convert numeric columns AFTER rename (now using snake_case names)
+    # Convert numeric columns AFTER rename (snake_case names guaranteed to exist)
     numeric_columns = [
         'ordered_quantity', 'delivered_quantity', 'open_quantity',
         'stock_in_virginia', 'stock_in_transit', 'stock_at_indus',
@@ -94,7 +94,7 @@ def process_oor_data(df):
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype('int64')
 
-    # Convert date columns — return None (not '') for empty/invalid dates
+    # Convert date columns AFTER rename -- keep as datetime objects (None for empty/invalid)
     date_columns = [
         'date_of_receiving_po',
         'customer_required_delivery_date',
@@ -109,7 +109,10 @@ def process_oor_data(df):
     if 'open_quantity' in df.columns:
         df = df[df['open_quantity'] > 0]
 
-    # Keep only DB-relevant columns
+    # Replace '<NA>' values with empty strings
+    df = df.replace('<NA>', '')
+
+    # Retain only the columns relevant for DB insertion
     columns_to_keep = [
         'customer_code', 'customer_po_number', 'date_of_receiving_po',
         'customer_required_delivery_date', 'sales_document', 'sales_document_item',
@@ -119,7 +122,7 @@ def process_oor_data(df):
     ]
     df = df[columns_to_keep]
 
-    # These don't exist in the Excel — insert as NULL
+    # These don't exist in the Excel -- insert as NULL
     df['actual_ship_date'] = None
     df['eta_virginia'] = None
 
